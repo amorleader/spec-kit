@@ -72,60 +72,73 @@ function Invoke-TestScript {
 function Get-WorkspaceSnapshot {
     param([string]$Root)
 
-    function Normalize-OnePath {
-        param([string]$Value)
-        $normalized = $Value.Trim()
-        if ($normalized.StartsWith('"') -and $normalized.EndsWith('"') -and $normalized.Length -ge 2) {
-            $normalized = $normalized.Substring(1, $normalized.Length - 2)
-        }
-        return $normalized.Trim()
-    }
-
     $snapshot = [PSCustomObject]@{
         Tracked   = @()
         Untracked = @()
     }
 
-    $previousEap = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
+    $gitExe = (Get-Command git -CommandType Application | Select-Object -First 1).Source
+    if ([string]::IsNullOrWhiteSpace($gitExe)) {
+        return $snapshot
+    }
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $gitExe
+    $psi.Arguments = ('-C "' + $Root + '" status --porcelain -z')
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $psi
+
     try {
-        $lines = git -C $Root status --porcelain 2>$null
-        if ($LASTEXITCODE -eq 0 -and $lines) {
-            foreach ($line in $lines) {
-                $text = $line.ToString()
-                if ($text.Length -lt 4) { continue }
-                $code = $text.Substring(0, 2)
-                $rawPath = $text.Substring(3).Trim()
-                if ([string]::IsNullOrWhiteSpace($rawPath)) { continue }
+        $null = $process.Start()
+        $memory = New-Object System.IO.MemoryStream
+        $process.StandardOutput.BaseStream.CopyTo($memory)
+        $process.WaitForExit()
 
-                $parsedPaths = @()
-                if ($rawPath -match ' -> ') {
-                    $parts = $rawPath -split ' -> ', 2
-                    if ($parts.Count -eq 2) {
-                        $parsedPaths += Normalize-OnePath -Value $parts[0]
-                        $parsedPaths += Normalize-OnePath -Value $parts[1]
+        if ($process.ExitCode -ne 0) {
+            return $snapshot
+        }
+
+        $raw = [System.Text.Encoding]::UTF8.GetString($memory.ToArray())
+        $tokens = @($raw -split "`0" | Where-Object { -not [string]::IsNullOrEmpty($_) })
+
+        $index = 0
+        while ($index -lt $tokens.Count) {
+            $entry = $tokens[$index]
+            $index++
+            if ($entry.Length -lt 4) { continue }
+
+            $code = $entry.Substring(0, 2)
+            $path1 = $entry.Substring(3)
+            $paths = @($path1)
+
+            $isRenameOrCopy = ($code.Contains('R') -or $code.Contains('C'))
+            if ($isRenameOrCopy -and $index -lt $tokens.Count) {
+                $path2 = $tokens[$index]
+                $index++
+                $paths += $path2
+            }
+
+            if ($code -eq '??') {
+                foreach ($path in $paths) {
+                    if (-not [string]::IsNullOrWhiteSpace($path)) {
+                        $snapshot.Untracked += $path
                     }
-                } else {
-                    $parsedPaths += Normalize-OnePath -Value $rawPath
                 }
-
-                if ($code -eq '??') {
-                    foreach ($path in $parsedPaths) {
-                        if (-not [string]::IsNullOrWhiteSpace($path)) {
-                            $snapshot.Untracked += $path
-                        }
-                    }
-                } else {
-                    foreach ($path in $parsedPaths) {
-                        if (-not [string]::IsNullOrWhiteSpace($path)) {
-                            $snapshot.Tracked += $path
-                        }
+            } else {
+                foreach ($path in $paths) {
+                    if (-not [string]::IsNullOrWhiteSpace($path)) {
+                        $snapshot.Tracked += $path
                     }
                 }
             }
         }
     } finally {
-        $ErrorActionPreference = $previousEap
+        $process.Dispose()
     }
 
     return $snapshot
