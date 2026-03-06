@@ -34,6 +34,13 @@ function Assert-Contains {
     }
 }
 
+function Assert-Match {
+    param([string]$Text, [string]$Pattern, [string]$Label)
+    if ($Text -notmatch $Pattern) {
+        throw "Assertion failed ($Label): pattern '$Pattern' not matched"
+    }
+}
+
 function Assert-LineOrder {
     param([string]$Text, [string[]]$Needles, [string]$Label)
     $index = -1
@@ -83,6 +90,8 @@ $env:SPECIFY_FEATURE = 'not-a-feature-branch'
 try {
     $r4 = Invoke-TextScript -ScriptPath $checkScript -CommandArgs @()
     if ($r4.ExitCode -eq 0) { throw 'Expected check-prerequisites text failure.' }
+    Assert-Match -Text $r4.Output -Pattern '(?m)^ERROR:' -Label 'check failure ERROR prefix'
+    Assert-Match -Text $r4.Output -Pattern '(?m)^HINT:' -Label 'check failure HINT prefix'
     Assert-Contains -Text $r4.Output -Needle 'ERROR: Not on a feature branch.' -Label 'check failure ERROR'
     Assert-Contains -Text $r4.Output -Needle 'HINT:' -Label 'check failure HINT'
 } finally {
@@ -95,6 +104,8 @@ $env:SPECIFY_FEATURE = 'not-a-feature-branch'
 try {
     $r5 = Invoke-TextScript -ScriptPath $setupScript -CommandArgs @()
     if ($r5.ExitCode -eq 0) { throw 'Expected setup-plan text failure.' }
+    Assert-Match -Text $r5.Output -Pattern '(?m)^ERROR:' -Label 'setup failure ERROR prefix'
+    Assert-Match -Text $r5.Output -Pattern '(?m)^HINT:' -Label 'setup failure HINT prefix'
     Assert-Contains -Text $r5.Output -Needle 'ERROR: Not on a feature branch.' -Label 'setup failure ERROR'
     Assert-Contains -Text $r5.Output -Needle 'HINT:' -Label 'setup failure HINT'
 } finally {
@@ -104,6 +115,8 @@ try {
 Write-Output 'Running US1 test: create-new-feature text failure exposes error line'
 $r6 = Invoke-TextScript -ScriptPath $createScript -WorkingDirectory $workspace -CommandArgs @()
 if ($r6.ExitCode -eq 0) { throw 'Expected create-new-feature text failure.' }
+Assert-Match -Text $r6.Output -Pattern '(?m)^ERROR:' -Label 'create failure ERROR prefix'
+Assert-Match -Text $r6.Output -Pattern '(?m)^HINT:' -Label 'create failure HINT prefix'
 Assert-Contains -Text $r6.Output -Needle 'ERROR:' -Label 'create failure ERROR'
 Assert-Contains -Text $r6.Output -Needle 'Usage: ./create-new-feature.ps1' -Label 'create failure usage'
 

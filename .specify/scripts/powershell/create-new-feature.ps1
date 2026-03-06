@@ -65,14 +65,14 @@ if ($FeatureDescription -and $FeatureDescription.Count -gt 0) {
 
 # Check if feature description provided
 if (-not $descriptionParts -or $descriptionParts.Count -eq 0) {
-    Exit-WithFailure -Message 'Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] <feature description>'
+    Exit-WithFailure -Message 'Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] <feature description>' -Hint 'Run with -Help to see usage examples.'
 }
 
 $featureDesc = ($descriptionParts -join ' ').Trim()
 
 # Validate description is not empty after trimming (e.g., user passed only whitespace)
 if ([string]::IsNullOrWhiteSpace($featureDesc)) {
-    Exit-WithFailure -Message 'Error: Feature description cannot be empty or contain only whitespace'
+    Exit-WithFailure -Message 'Error: Feature description cannot be empty or contain only whitespace' -Hint 'Provide a non-empty feature description.'
 }
 
 # Resolve repository root. Prefer git information when available, but fall back
@@ -171,7 +171,7 @@ function ConvertTo-CleanBranchName {
 }
 $fallbackRoot = (Find-RepositoryRoot -StartDir $PSScriptRoot)
 if (-not $fallbackRoot) {
-    Exit-WithFailure -Message 'Error: Could not determine repository root. Please run this script from within the repository.'
+    Exit-WithFailure -Message 'Error: Could not determine repository root. Please run this script from within the repository.' -Hint 'Run the command from inside a repository containing .git or .specify.'
 }
 
 try {
