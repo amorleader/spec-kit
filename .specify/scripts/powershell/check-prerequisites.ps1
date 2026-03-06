@@ -40,8 +40,8 @@ function Fail-Check {
             HINT   = $Hint
         } | ConvertTo-Json -Compress
     } else {
-        Write-Error $Message
-        Write-Error $Hint
+        Write-Output $Message
+        Write-Output "HINT: $Hint"
     }
     exit 1
 }

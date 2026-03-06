@@ -27,9 +27,9 @@ function Exit-WithFailure {
             HINT   = $Hint
         } | ConvertTo-Json -Compress
     } else {
-        Write-Error $Message
+        Write-Output "ERROR: $Message"
         if (-not [string]::IsNullOrWhiteSpace($Hint)) {
-            Write-Error $Hint
+            Write-Output "HINT: $Hint"
         }
     }
 

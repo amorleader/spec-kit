@@ -35,7 +35,7 @@ if ($paths.HAS_GIT -and $paths.CURRENT_BRANCH -notmatch '^[0-9]{3}-') {
         } | ConvertTo-Json -Compress
     } else {
         Write-Output "ERROR: Not on a feature branch. Current branch: $($paths.CURRENT_BRANCH)"
-        Write-Output 'Feature branches should be named like: 001-feature-name'
+        Write-Output 'HINT: Feature branches should be named like: 001-feature-name'
     }
     exit 1
 }
