@@ -23,6 +23,7 @@
 
 ## Phase 3: User Story 1 - 解析重命名与特殊文件名 (Priority: P1) 🎯 MVP
 
+**Goal**: 通过 porcelain-z NUL 分隔解析稳定处理 rename 双路径与复杂文件名。
 **Independent Test**: z-mode regression passes for rename paths containing ` -> ` and spaces.
 
 - [ ] T007 [P] [US1] Add z-mode rename regression fixture in tests/run_all_quality_checks_status_parser_zmode_regression.ps1
@@ -35,6 +36,7 @@
 
 ## Phase 4: User Story 2 - 保持现有输出兼容 (Priority: P2)
 
+**Goal**: 在解析升级后维持 JSON/text 输出契约和失败语义兼容。
 **Independent Test**: docs-only JSON output remains parseable with existing fields.
 
 - [ ] T012 [P] [US2] Add compatibility assertions in tests/run_all_quality_checks_status_parser_zmode_regression.ps1
@@ -45,6 +47,7 @@
 
 ## Phase 5: User Story 3 - 文档与回归门禁 (Priority: P3)
 
+**Goal**: 固化 z-mode 行为到文档和回归门禁，避免后续回退。
 **Independent Test**: z-mode docs validator passes and is included in aggregate run.
 
 - [ ] T015 [P] [US3] Add z-mode docs validator in tests/validate_run_all_quality_checks_status_parser_zmode_docs.ps1
@@ -66,6 +69,7 @@
 ## Dependencies & Execution Order
 
 - Phase 1 → Phase 2 → US1 → US2 → US3 → Phase 6
+- Story graph: US1 → US2 → US3
 - US2 depends on parser implementation from US1.
 - US3 depends on finalized contracts and quickstart references.
 
@@ -81,6 +85,20 @@
 ```bash
 Task: "T007 [US1] Add z-mode rename regression fixture in tests/run_all_quality_checks_status_parser_zmode_regression.ps1"
 Task: "T009 [US1] Implement porcelain-z snapshot parser in tests/run_all_quality_checks.ps1"
+```
+
+## Parallel Example: User Story 2
+
+```bash
+Task: "T012 [US2] Add compatibility assertions in tests/run_all_quality_checks_status_parser_zmode_regression.ps1"
+Task: "T013 [US2] Verify no output contract regression in tests/run_all_quality_checks.ps1"
+```
+
+## Parallel Example: User Story 3
+
+```bash
+Task: "T015 [US3] Add z-mode docs validator in tests/validate_run_all_quality_checks_status_parser_zmode_docs.ps1"
+Task: "T016 [US3] Document z-mode semantics in specs/022-status-parser-zmode/contracts/quality-runner-status-parser-zmode-contract.md"
 ```
 
 ## Implementation Strategy
