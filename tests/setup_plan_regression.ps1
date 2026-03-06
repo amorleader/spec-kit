@@ -13,11 +13,13 @@ $ErrorActionPreference = 'Stop'
 function Invoke-SetupPlan {
     param(
         [string]$WorkingDir,
-        [switch]$ForceOverwrite
+        [switch]$ForceOverwrite,
+        [switch]$JsonMode
     )
 
     $scriptPath = Join-Path $RepoRoot '.specify/scripts/powershell/setup-plan.ps1'
-    $args = @('-ExecutionPolicy', 'Bypass', '-File', $scriptPath, '-Json')
+    $args = @('-ExecutionPolicy', 'Bypass', '-File', $scriptPath)
+    if ($JsonMode) { $args += '-Json' }
     if ($ForceOverwrite) { $args += '-Force' }
 
     Push-Location $WorkingDir
@@ -79,7 +81,12 @@ try {
         $failureCount++
     }
 
-    $existingJson = Get-JsonFromOutput -OutputLines $existingResult.Output
+    $existingJsonResult = Invoke-SetupPlan -WorkingDir $RepoRoot -JsonMode
+    if ($existingJsonResult.ExitCode -ne 0) {
+        Write-Output "FAIL: setup-plan JSON check returned non-zero on existing plan case: $($existingJsonResult.ExitCode)"
+        $failureCount++
+    }
+    $existingJson = Get-JsonFromOutput -OutputLines $existingJsonResult.Output
     Assert-SetupPlanJsonFields -JsonText $existingJson | Out-Null
 
     Write-Output 'Running US1 test: missing plan should be created by default'
@@ -103,7 +110,12 @@ try {
         $failureCount++
     }
 
-    $missingJson = Get-JsonFromOutput -OutputLines $missingResult.Output
+    $missingJsonResult = Invoke-SetupPlan -WorkingDir $RepoRoot -JsonMode
+    if ($missingJsonResult.ExitCode -ne 0) {
+        Write-Output "FAIL: setup-plan JSON check returned non-zero on missing plan case: $($missingJsonResult.ExitCode)"
+        $failureCount++
+    }
+    $missingJson = Get-JsonFromOutput -OutputLines $missingJsonResult.Output
     Assert-SetupPlanJsonFields -JsonText $missingJson | Out-Null
 
     Write-Output 'Running US2 test: force mode should overwrite existing plan'
@@ -128,7 +140,12 @@ try {
     }
 
     Write-Output 'Running US2 test: JSON output fields should stay backward compatible'
-    $forceJson = Get-JsonFromOutput -OutputLines $forceResult.Output
+    $forceJsonResult = Invoke-SetupPlan -WorkingDir $RepoRoot -ForceOverwrite -JsonMode
+    if ($forceJsonResult.ExitCode -ne 0) {
+        Write-Output "FAIL: setup-plan JSON check returned non-zero on force overwrite case: $($forceJsonResult.ExitCode)"
+        $failureCount++
+    }
+    $forceJson = Get-JsonFromOutput -OutputLines $forceJsonResult.Output
     Assert-SetupPlanJsonFields -JsonText $forceJson | Out-Null
 }
 finally {
