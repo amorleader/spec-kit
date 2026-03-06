@@ -113,7 +113,7 @@ try {
     git checkout -b another | Out-Null
     $script = Join-Path $ws4 '.specify/scripts/powershell/create-new-feature.ps1'
     $content = Get-Content $script -Raw
-    $content = $content -replace 'git checkout \$branchName \| Out-Null', 'throw "checkout failed"'
+    $content = $content -replace '\$null = git checkout \$branchName 2>\$null', 'throw "checkout failed"'
     Set-Content -Path $script -Value $content
 
     $r4 = Invoke-CreateFeature -Workspace $ws4 -CommandArgs @('-Json', '-Number', '6', '-ShortName', 'recover-missing-specs', 'checkout fail')

@@ -265,14 +265,17 @@ if ($branchName.Length -gt $maxBranchLength) {
 if ($hasGit) {
     $branchReady = $false
     $action = 'created'
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     try {
-        git checkout -b $branchName 2>$null | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            $branchReady = $true
-            $action = 'created'
-        }
-    } catch {
-        # Exception during git command
+        $null = git checkout -b $branchName 2>$null
+        $createExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousEap
+    }
+    if ($createExitCode -eq 0) {
+        $branchReady = $true
+        $action = 'created'
     }
 
     if (-not $branchReady) {
@@ -284,16 +287,18 @@ if ($hasGit) {
                 $branchReady = $true
                 $action = 'recovered-current'
             } else {
+                $previousEap = $ErrorActionPreference
+                $ErrorActionPreference = 'Continue'
                 try {
-                    git checkout $branchName 2>$null | Out-Null
-                    if ($LASTEXITCODE -eq 0) {
-                        $branchReady = $true
-                        $action = 'recovered-checkout'
-                    } else {
-                        Write-Error "Error: Branch '$branchName' exists but could not be checked out. Please checkout manually and retry."
-                        exit 1
-                    }
-                } catch {
+                    $null = git checkout $branchName 2>$null
+                    $checkoutExitCode = $LASTEXITCODE
+                } finally {
+                    $ErrorActionPreference = $previousEap
+                }
+                if ($checkoutExitCode -eq 0) {
+                    $branchReady = $true
+                    $action = 'recovered-checkout'
+                } else {
                     Write-Error "Error: Branch '$branchName' exists but checkout failed. Please checkout manually and retry."
                     exit 1
                 }
