@@ -22,6 +22,26 @@ function Assert-IsPureJson {
     $null = $trimmed | ConvertFrom-Json
 }
 
+function Assert-JsonErrorContract {
+    param(
+        [object]$JsonObject,
+        [string]$Scenario
+    )
+
+    if ([string]::IsNullOrWhiteSpace([string]$JsonObject.STATUS)) {
+        throw "Expected STATUS field in $Scenario"
+    }
+    if ($JsonObject.STATUS -ne 'ERROR') {
+        throw "Expected STATUS='ERROR' in $Scenario"
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$JsonObject.ERROR)) {
+        throw "Expected non-empty ERROR field in $Scenario"
+    }
+    if ($null -eq $JsonObject.PSObject.Properties['HINT']) {
+        throw "Expected HINT field in $Scenario"
+    }
+}
+
 function Invoke-PowerShellScript {
     param(
         [string]$ScriptPath,
@@ -77,7 +97,7 @@ try {
     if ($r4.ExitCode -eq 0) { throw 'Expected check-prerequisites failure for invalid branch.' }
     Assert-IsPureJson -Text $r4.Output -Scenario 'check-prerequisites failure'
     $j4 = $r4.Output.Trim() | ConvertFrom-Json
-    if ([string]::IsNullOrWhiteSpace([string]$j4.ERROR)) { throw 'Expected ERROR field in check-prerequisites failure JSON.' }
+    Assert-JsonErrorContract -JsonObject $j4 -Scenario 'check-prerequisites failure'
 } finally {
     $env:SPECIFY_FEATURE = $previousFeature
 }
@@ -90,7 +110,7 @@ try {
     if ($r5.ExitCode -eq 0) { throw 'Expected setup-plan failure for invalid branch.' }
     Assert-IsPureJson -Text $r5.Output -Scenario 'setup-plan failure'
     $j5 = $r5.Output.Trim() | ConvertFrom-Json
-    if ([string]::IsNullOrWhiteSpace([string]$j5.ERROR)) { throw 'Expected ERROR field in setup-plan failure JSON.' }
+    Assert-JsonErrorContract -JsonObject $j5 -Scenario 'setup-plan failure'
 } finally {
     $env:SPECIFY_FEATURE = $previousFeature
 }
@@ -100,6 +120,6 @@ $r6 = Invoke-PowerShellScript -ScriptPath $createScript -WorkingDirectory $works
 if ($r6.ExitCode -eq 0) { throw 'Expected create-new-feature failure when description is missing.' }
 Assert-IsPureJson -Text $r6.Output -Scenario 'create-new-feature failure'
 $j6 = $r6.Output.Trim() | ConvertFrom-Json
-if ([string]::IsNullOrWhiteSpace([string]$j6.ERROR)) { throw 'Expected ERROR field in create-new-feature failure JSON.' }
+Assert-JsonErrorContract -JsonObject $j6 -Scenario 'create-new-feature failure'
 
 Write-Output 'json_pure_output_regression: PASSED'
