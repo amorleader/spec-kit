@@ -6,6 +6,8 @@ param(
     [string]$ShortName,
     [int]$Number = 0,
     [switch]$Help,
+    [Parameter(Position = 0)]
+    [string]$Description,
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$FeatureDescription
 )
@@ -22,18 +24,29 @@ if ($Help) {
     Write-Host "  -Help               Show this help message"
     Write-Host ""
     Write-Host "Examples:"
+    Write-Host "  ./create-new-feature.ps1 -Json 'Add user authentication system'"
+    Write-Host "  ./create-new-feature.ps1 'Add user authentication system' -Json"
     Write-Host "  ./create-new-feature.ps1 'Add user authentication system' -ShortName 'user-auth'"
     Write-Host "  ./create-new-feature.ps1 'Implement OAuth2 integration for API'"
     exit 0
 }
 
+# Consolidate feature description input from positional and remaining arguments
+$descriptionParts = @()
+if (-not [string]::IsNullOrWhiteSpace($Description)) {
+    $descriptionParts += $Description
+}
+if ($FeatureDescription -and $FeatureDescription.Count -gt 0) {
+    $descriptionParts += $FeatureDescription
+}
+
 # Check if feature description provided
-if (-not $FeatureDescription -or $FeatureDescription.Count -eq 0) {
+if (-not $descriptionParts -or $descriptionParts.Count -eq 0) {
     Write-Error "Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] <feature description>"
     exit 1
 }
 
-$featureDesc = ($FeatureDescription -join ' ').Trim()
+$featureDesc = ($descriptionParts -join ' ').Trim()
 
 # Validate description is not empty after trimming (e.g., user passed only whitespace)
 if ([string]::IsNullOrWhiteSpace($featureDesc)) {
