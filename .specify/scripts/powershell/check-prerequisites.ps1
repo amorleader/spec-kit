@@ -25,6 +25,19 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Fail-Check {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message,
+        [Parameter(Mandatory = $true)]
+        [string]$Hint
+    )
+
+    Write-Error $Message
+    Write-Error $Hint
+    exit 1
+}
+
 # Show help if requested
 if ($Help) {
     Write-Output @"
@@ -87,22 +100,16 @@ if ($PathsOnly) {
 
 # Validate required directories and files
 if (-not (Test-Path $paths.FEATURE_DIR -PathType Container)) {
-    Write-Output "ERROR: Feature directory not found: $($paths.FEATURE_DIR)"
-    Write-Output "Run /speckit.specify first to create the feature structure."
-    exit 1
+    Fail-Check -Message "ERROR: Feature directory not found: $($paths.FEATURE_DIR)" -Hint 'Run /speckit.specify first to create the feature structure.'
 }
 
 if (-not (Test-Path $paths.IMPL_PLAN -PathType Leaf)) {
-    Write-Output "ERROR: plan.md not found in $($paths.FEATURE_DIR)"
-    Write-Output "Run /speckit.plan first to create the implementation plan."
-    exit 1
+    Fail-Check -Message "ERROR: plan.md not found in $($paths.FEATURE_DIR)" -Hint 'Run /speckit.plan first to create the implementation plan.'
 }
 
 # Check for tasks.md if required
 if ($RequireTasks -and -not (Test-Path $paths.TASKS -PathType Leaf)) {
-    Write-Output "ERROR: tasks.md not found in $($paths.FEATURE_DIR)"
-    Write-Output "Run /speckit.tasks first to create the task list."
-    exit 1
+    Fail-Check -Message "ERROR: tasks.md not found in $($paths.FEATURE_DIR)" -Hint 'Run /speckit.tasks first to create the task list.'
 }
 
 # Build list of available documents
@@ -127,9 +134,9 @@ if ($IncludeTasks -and (Test-Path $paths.TASKS)) {
 # Output results
 if ($Json) {
     # JSON output
-    [PSCustomObject]@{ 
+    [PSCustomObject][ordered]@{ 
         FEATURE_DIR = $paths.FEATURE_DIR
-        AVAILABLE_DOCS = $docs 
+        AVAILABLE_DOCS = @($docs)
     } | ConvertTo-Json -Compress
 } else {
     # Text output
