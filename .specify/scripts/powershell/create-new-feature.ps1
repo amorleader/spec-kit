@@ -255,9 +255,11 @@ if ($branchName.Length -gt $maxBranchLength) {
     $originalBranchName = $branchName
     $branchName = "$featureNum-$truncatedSuffix"
     
-    Write-Warning "[specify] Branch name exceeded GitHub's 244-byte limit"
-    Write-Warning "[specify] Original: $originalBranchName ($($originalBranchName.Length) bytes)"
-    Write-Warning "[specify] Truncated to: $branchName ($($branchName.Length) bytes)"
+    if (-not $Json) {
+        Write-Warning "[specify] Branch name exceeded GitHub's 244-byte limit"
+        Write-Warning "[specify] Original: $originalBranchName ($($originalBranchName.Length) bytes)"
+        Write-Warning "[specify] Truncated to: $branchName ($($branchName.Length) bytes)"
+    }
 }
 
 if ($hasGit) {
