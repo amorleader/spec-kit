@@ -42,27 +42,41 @@ if (Test-Path $paths.IMPL_PLAN) {
         if (Test-Path $template) {
             Copy-Item $template $paths.IMPL_PLAN -Force
             $action = 'overwritten'
-            Write-Output "ACTION: overwritten plan from template at $($paths.IMPL_PLAN)"
+            if (-not $Json) {
+                Write-Output "ACTION: overwritten plan from template at $($paths.IMPL_PLAN)"
+            }
         } else {
-            Write-Warning "Plan template not found at $template"
+            if (-not $Json) {
+                Write-Warning "Plan template not found at $template"
+            }
             New-Item -ItemType File -Path $paths.IMPL_PLAN -Force | Out-Null
             $action = 'overwritten'
-            Write-Output "ACTION: overwritten plan with empty file at $($paths.IMPL_PLAN)"
+            if (-not $Json) {
+                Write-Output "ACTION: overwritten plan with empty file at $($paths.IMPL_PLAN)"
+            }
         }
     } else {
         $action = 'preserved'
-        Write-Output "ACTION: preserved existing plan at $($paths.IMPL_PLAN)"
+        if (-not $Json) {
+            Write-Output "ACTION: preserved existing plan at $($paths.IMPL_PLAN)"
+        }
     }
 } else {
     if (Test-Path $template) {
         Copy-Item $template $paths.IMPL_PLAN -Force
         $action = 'created'
-        Write-Output "ACTION: created plan from template at $($paths.IMPL_PLAN)"
+        if (-not $Json) {
+            Write-Output "ACTION: created plan from template at $($paths.IMPL_PLAN)"
+        }
     } else {
-        Write-Warning "Plan template not found at $template"
+        if (-not $Json) {
+            Write-Warning "Plan template not found at $template"
+        }
         New-Item -ItemType File -Path $paths.IMPL_PLAN -Force | Out-Null
         $action = 'created'
-        Write-Output "ACTION: created empty plan at $($paths.IMPL_PLAN)"
+        if (-not $Json) {
+            Write-Output "ACTION: created empty plan at $($paths.IMPL_PLAN)"
+        }
     }
 }
 
