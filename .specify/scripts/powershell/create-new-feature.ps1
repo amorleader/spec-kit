@@ -261,22 +261,41 @@ if ($branchName.Length -gt $maxBranchLength) {
 }
 
 if ($hasGit) {
-    $branchCreated = $false
+    $branchReady = $false
+    $action = 'created'
     try {
-        git checkout -b $branchName 2>$null | Out-Null
+        git checkout -b $branchName | Out-Null
         if ($LASTEXITCODE -eq 0) {
-            $branchCreated = $true
+            $branchReady = $true
+            $action = 'created'
         }
     } catch {
         # Exception during git command
     }
 
-    if (-not $branchCreated) {
+    if (-not $branchReady) {
         # Check if branch already exists
         $existingBranch = git branch --list $branchName 2>$null
         if ($existingBranch) {
-            Write-Error "Error: Branch '$branchName' already exists. Please use a different feature name or specify a different number with -Number."
-            exit 1
+            $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
+            if ($currentBranch -eq $branchName) {
+                $branchReady = $true
+                $action = 'recovered-current'
+            } else {
+                try {
+                    git checkout $branchName | Out-Null
+                    if ($LASTEXITCODE -eq 0) {
+                        $branchReady = $true
+                        $action = 'recovered-checkout'
+                    } else {
+                        Write-Error "Error: Branch '$branchName' exists but could not be checked out. Please checkout manually and retry."
+                        exit 1
+                    }
+                } catch {
+                    Write-Error "Error: Branch '$branchName' exists but checkout failed. Please checkout manually and retry."
+                    exit 1
+                }
+            }
         } else {
             Write-Error "Error: Failed to create git branch '$branchName'. Please check your git configuration and try again."
             exit 1
@@ -291,16 +310,24 @@ New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
 
 $template = Join-Path $repoRoot '.specify/templates/spec-template.md'
 $specFile = Join-Path $featureDir 'spec.md'
-if (Test-Path $template) { 
-    Copy-Item $template $specFile -Force 
-} else { 
-    New-Item -ItemType File -Path $specFile | Out-Null 
+$specExisted = Test-Path $specFile
+if (-not $specExisted) {
+    if (Test-Path $template) { 
+        Copy-Item $template $specFile -Force 
+    } else { 
+        New-Item -ItemType File -Path $specFile | Out-Null 
+    }
+} else {
+    if ($action -eq 'created') {
+        $action = 'preserved'
+    }
 }
 
 # Set the SPECIFY_FEATURE environment variable for the current session
 $env:SPECIFY_FEATURE = $branchName
 
 if ($Json) {
+    Write-Output "ACTION: $action"
     $obj = [PSCustomObject]@{ 
         BRANCH_NAME = $branchName
         SPEC_FILE = $specFile
@@ -309,6 +336,7 @@ if ($Json) {
     }
     $obj | ConvertTo-Json -Compress
 } else {
+    Write-Output "ACTION: $action"
     Write-Output "BRANCH_NAME: $branchName"
     Write-Output "SPEC_FILE: $specFile"
     Write-Output "FEATURE_NUM: $featureNum"
