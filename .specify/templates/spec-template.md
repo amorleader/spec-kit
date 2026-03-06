@@ -95,6 +95,19 @@
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
+## Constitution Alignment *(mandatory)*
+
+<!--
+  ACTION REQUIRED: Confirm alignment with constitutional requirements.
+  Keep this section concise and concrete.
+-->
+
+- **CA-001 Spec Traceability**: Map each user story to the functional requirements it satisfies.
+- **CA-002 CLI Contract Impact**: Define whether CLI commands, arguments, outputs, or exit behavior change.
+- **CA-003 Test-First Plan**: State which failing tests will be written before implementation.
+- **CA-004 Boundary Coverage**: Identify required contract/integration tests for interfaces and shared schemas.
+- **CA-005 Observability & Versioning**: Define required diagnostics and semantic version impact.
+
 ### Key Entities *(include if feature involves data)*
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]

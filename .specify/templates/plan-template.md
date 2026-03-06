@@ -31,7 +31,13 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] Spec traceability exists from planned work to `spec.md` user stories and requirements.
+- [ ] CLI contract impact is documented (commands, arguments, stdout/stderr, JSON output).
+- [ ] Test-first approach is defined (tests written first and expected to fail before implementation).
+- [ ] Contract/integration coverage is planned for interface, schema, or cross-component changes.
+- [ ] Observability impact is documented (logs/metrics/traces needed to diagnose failures).
+- [ ] Version impact is documented using semantic versioning, including breaking-change notes.
+- [ ] Any added complexity is justified in `## Complexity Tracking` with rejected simpler alternatives.
 
 ## Project Structure
 
