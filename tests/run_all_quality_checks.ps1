@@ -9,6 +9,20 @@ $ErrorActionPreference = 'Stop'
 
 Push-Location $RepoRoot
 try {
+    $originalBranch = $null
+    $hasGitRepo = $false
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $branchOutput = git rev-parse --abbrev-ref HEAD 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $hasGitRepo = $true
+            $originalBranch = ($branchOutput | Select-Object -First 1).ToString().Trim()
+        }
+    } finally {
+        $ErrorActionPreference = $previousEap
+    }
+
     $regressions = @()
     if (-not $IncludeDocsOnly) {
         $regressions = Get-ChildItem -Path (Join-Path $RepoRoot 'tests') -Filter '*_regression.ps1' |
@@ -68,5 +82,25 @@ try {
     Write-Output 'run_all_quality_checks: PASSED'
 }
 finally {
+    if ($hasGitRepo -and -not [string]::IsNullOrWhiteSpace($originalBranch) -and $originalBranch -ne 'HEAD') {
+        $previousEap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $currentBranchOutput = git rev-parse --abbrev-ref HEAD 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                $currentBranch = ($currentBranchOutput | Select-Object -First 1).ToString().Trim()
+                if ($currentBranch -ne $originalBranch) {
+                    $null = git checkout $originalBranch 2>$null
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Output "run_all_quality_checks: restored branch to $originalBranch"
+                    } else {
+                        Write-Warning "run_all_quality_checks: failed to restore branch to $originalBranch"
+                    }
+                }
+            }
+        } finally {
+            $ErrorActionPreference = $previousEap
+        }
+    }
     Pop-Location
 }
