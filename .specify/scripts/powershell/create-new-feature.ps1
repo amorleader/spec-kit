@@ -264,7 +264,7 @@ if ($hasGit) {
     $branchReady = $false
     $action = 'created'
     try {
-        git checkout -b $branchName | Out-Null
+        git checkout -b $branchName 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) {
             $branchReady = $true
             $action = 'created'
@@ -283,7 +283,7 @@ if ($hasGit) {
                 $action = 'recovered-current'
             } else {
                 try {
-                    git checkout $branchName | Out-Null
+                    git checkout $branchName 2>$null | Out-Null
                     if ($LASTEXITCODE -eq 0) {
                         $branchReady = $true
                         $action = 'recovered-checkout'
@@ -302,7 +302,9 @@ if ($hasGit) {
         }
     }
 } else {
-    Write-Warning "[specify] Warning: Git repository not detected; skipped branch creation for $branchName"
+    if (-not $Json) {
+        Write-Warning "[specify] Warning: Git repository not detected; skipped branch creation for $branchName"
+    }
 }
 
 $featureDir = Join-Path $specsDir $branchName
@@ -327,7 +329,6 @@ if (-not $specExisted) {
 $env:SPECIFY_FEATURE = $branchName
 
 if ($Json) {
-    Write-Output "ACTION: $action"
     $obj = [PSCustomObject]@{ 
         BRANCH_NAME = $branchName
         SPEC_FILE = $specFile
