@@ -69,6 +69,91 @@ function Invoke-TestScript {
     }
 }
 
+function Get-WorkspaceSnapshot {
+    param([string]$Root)
+
+    $snapshot = [PSCustomObject]@{
+        Tracked   = @()
+        Untracked = @()
+    }
+
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $lines = git -C $Root status --porcelain 2>$null
+        if ($LASTEXITCODE -eq 0 -and $lines) {
+            foreach ($line in $lines) {
+                $text = $line.ToString()
+                if ($text.Length -lt 4) { continue }
+                $code = $text.Substring(0, 2)
+                $path = $text.Substring(3).Trim()
+                if ([string]::IsNullOrWhiteSpace($path)) { continue }
+                if ($code -eq '??') {
+                    $snapshot.Untracked += $path
+                } else {
+                    $snapshot.Tracked += $path
+                }
+            }
+        }
+    } finally {
+        $ErrorActionPreference = $previousEap
+    }
+
+    return $snapshot
+}
+
+function Restore-WorkspaceChanges {
+    param(
+        [string]$Root,
+        [object]$Before,
+        [object]$After
+    )
+
+    $beforeTrackedSet = @{}
+    foreach ($path in @($Before.Tracked)) { $beforeTrackedSet[$path] = $true }
+
+    $beforeUntrackedSet = @{}
+    foreach ($path in @($Before.Untracked)) { $beforeUntrackedSet[$path] = $true }
+
+    $revertedTracked = @()
+    foreach ($path in @($After.Tracked)) {
+        if (-not $beforeTrackedSet.ContainsKey($path)) {
+            $previousEap = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                $null = git -C $Root checkout -- "$path" 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                    $revertedTracked += $path
+                }
+            } finally {
+                $ErrorActionPreference = $previousEap
+            }
+        }
+    }
+
+    $deletedTemp = @()
+    foreach ($path in @($After.Untracked)) {
+        if ($beforeUntrackedSet.ContainsKey($path)) {
+            continue
+        }
+        if ($path -notmatch '\.bak$' -and $path -notmatch '\.tmp$') {
+            continue
+        }
+        $absolute = Join-Path $Root $path
+        if (Test-Path $absolute) {
+            Remove-Item -Path $absolute -Force -ErrorAction SilentlyContinue
+            if (-not (Test-Path $absolute)) {
+                $deletedTemp += $path
+            }
+        }
+    }
+
+    [PSCustomObject]@{
+        RevertedTracked = @($revertedTracked)
+        DeletedTemp     = @($deletedTemp)
+    }
+}
+
 Push-Location $RepoRoot
 try {
     $originalBranch = $null
@@ -99,6 +184,8 @@ try {
     $scripts = @($regressions + $docChecks)
     $results = @()
     $overallExitCode = 0
+    $recoveredTrackedChanges = 0
+    $deletedTempFiles = 0
 
     if ($scripts.Count -eq 0) {
         if ($Json) {
@@ -107,6 +194,8 @@ try {
                 FAILED_SCRIPTS     = 0
                 PASSED_SCRIPTS     = 0
                 TIMED_OUT_SCRIPTS  = 0
+                RECOVERED_TRACKED_CHANGES = 0
+                DELETED_TEMP_FILES = 0
                 INCLUDE_DOCS_ONLY  = [bool]$IncludeDocsOnly
                 PER_SCRIPT_TIMEOUT_SEC = $PerScriptTimeoutSec
                 ORIGINAL_BRANCH    = $originalBranch
@@ -128,7 +217,18 @@ try {
             Write-Output "--- RUN $name ---"
         }
 
+        $beforeSnapshot = if ($hasGitRepo) { Get-WorkspaceSnapshot -Root $RepoRoot } else { $null }
         $execution = Invoke-TestScript -ScriptPath $script -TimeoutSec $PerScriptTimeoutSec
+        if ($hasGitRepo -and $beforeSnapshot) {
+            $afterSnapshot = Get-WorkspaceSnapshot -Root $RepoRoot
+            $recovery = Restore-WorkspaceChanges -Root $RepoRoot -Before $beforeSnapshot -After $afterSnapshot
+            $recoveredTrackedChanges += @($recovery.RevertedTracked).Count
+            $deletedTempFiles += @($recovery.DeletedTemp).Count
+            if (-not $Json -and (@($recovery.RevertedTracked).Count -gt 0 -or @($recovery.DeletedTemp).Count -gt 0)) {
+                Write-Output ("run_all_quality_checks: workspace recovery for " + $name + " -> reverted=" + @($recovery.RevertedTracked).Count + ", deleted_temp=" + @($recovery.DeletedTemp).Count)
+            }
+        }
+
         $output = @($execution.Output)
         $exitCode = $execution.ExitCode
         $timedOut = [bool]$execution.TimedOut
@@ -182,6 +282,8 @@ try {
             FAILED_SCRIPTS     = $failures.Count
             PASSED_SCRIPTS     = $scripts.Count - $failures.Count
             TIMED_OUT_SCRIPTS  = $timedOutCount
+            RECOVERED_TRACKED_CHANGES = $recoveredTrackedChanges
+            DELETED_TEMP_FILES = $deletedTempFiles
             INCLUDE_DOCS_ONLY  = [bool]$IncludeDocsOnly
             PER_SCRIPT_TIMEOUT_SEC = $PerScriptTimeoutSec
             ORIGINAL_BRANCH    = $originalBranch
@@ -193,6 +295,8 @@ try {
             Write-Output ''
             Write-Output 'run_all_quality_checks: FAILED'
             Write-Output ("timed_out_scripts: " + $timedOutCount)
+            Write-Output ("recovered_tracked_changes: " + $recoveredTrackedChanges)
+            Write-Output ("deleted_temp_files: " + $deletedTempFiles)
             $failures | ForEach-Object {
                 if ($_.Status -eq 'TIMEOUT') {
                     Write-Output ("  - " + $_.Script + " (TIMEOUT, limit=" + $PerScriptTimeoutSec + "s)")
@@ -203,6 +307,8 @@ try {
         } else {
             Write-Output ''
             Write-Output 'run_all_quality_checks: PASSED'
+            Write-Output ("recovered_tracked_changes: " + $recoveredTrackedChanges)
+            Write-Output ("deleted_temp_files: " + $deletedTempFiles)
         }
     }
 
