@@ -2,9 +2,9 @@
 
 ## Phase 1 - Baseline Definition
 
-- [ ] T001 Define Java stack baseline (JDK, Spring Boot, Maven, MySQL profile)
-- [ ] T002 Define standard package/layer conventions for generated code
-- [ ] T003 Define team coding checklist (error handling, logging, DTO boundary)
+- [x] T001 Define Java stack baseline (JDK, Spring Boot, Maven, MySQL profile)
+- [x] T002 Define standard package/layer conventions for generated code
+- [x] T003 Define team coding checklist (error handling, logging, DTO boundary)
 
 ## Phase 2 - Workflow Artifact Standardization
 
