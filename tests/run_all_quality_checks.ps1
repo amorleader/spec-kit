@@ -3,10 +3,71 @@
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
     [switch]$IncludeDocsOnly,
-    [switch]$Json
+    [switch]$Json,
+    [ValidateRange(0, 86400)]
+    [int]$PerScriptTimeoutSec = 0
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Invoke-TestScript {
+    param(
+        [string]$ScriptPath,
+        [int]$TimeoutSec
+    )
+
+    $powerShellExe = (Get-Command powershell -CommandType Application | Select-Object -First 1).Source
+    if ([string]::IsNullOrWhiteSpace($powerShellExe)) {
+        $powerShellExe = 'powershell'
+    }
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $powerShellExe
+    $psi.Arguments = ('-ExecutionPolicy Bypass -File "' + $ScriptPath + '"')
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $psi
+
+    try {
+        $null = $process.Start()
+
+        $timedOut = $false
+        if ($TimeoutSec -gt 0) {
+            if (-not $process.WaitForExit($TimeoutSec * 1000)) {
+                $timedOut = $true
+                try {
+                    $process.Kill()
+                } catch {
+                }
+            }
+        }
+
+        $process.WaitForExit()
+
+        $stdout = $process.StandardOutput.ReadToEnd()
+        $stderr = $process.StandardError.ReadToEnd()
+        $combined = @()
+        if (-not [string]::IsNullOrEmpty($stdout)) {
+            $combined += ($stdout -split "`r?`n")
+        }
+        if (-not [string]::IsNullOrEmpty($stderr)) {
+            $combined += ($stderr -split "`r?`n")
+        }
+
+        [PSCustomObject]@{
+            ExitCode = if ($timedOut) { 124 } else { $process.ExitCode }
+            TimedOut = $timedOut
+            Output   = @($combined | Where-Object { $_ -ne '' })
+        }
+    }
+    finally {
+        $process.Dispose()
+    }
+}
 
 . (Join-Path $RepoRoot 'tests/helpers/process_hygiene.ps1')
 
@@ -47,7 +108,9 @@ try {
                 TOTAL_SCRIPTS      = 0
                 FAILED_SCRIPTS     = 0
                 PASSED_SCRIPTS     = 0
+                TIMED_OUT_SCRIPTS  = 0
                 INCLUDE_DOCS_ONLY  = [bool]$IncludeDocsOnly
+                PER_SCRIPT_TIMEOUT_SEC = $PerScriptTimeoutSec
                 ORIGINAL_BRANCH    = $originalBranch
                 RESULTS            = @()
                 STATUS             = 'NO_SCRIPTS_FOUND'
@@ -59,6 +122,7 @@ try {
     }
 
     $failures = @()
+    $timedOutCount = 0
 
     foreach ($script in $scripts) {
         $name = Split-Path $script -Leaf
@@ -66,27 +130,35 @@ try {
             Write-Output "--- RUN $name ---"
         }
 
-        $previousEap = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        try {
-            $output = & powershell -ExecutionPolicy Bypass -File $script 2>&1
-            $exitCode = $LASTEXITCODE
-        } finally {
-            $ErrorActionPreference = $previousEap
-        }
+        $execution = Invoke-TestScript -ScriptPath $script -TimeoutSec $PerScriptTimeoutSec
+        $output = @($execution.Output)
+        $exitCode = $execution.ExitCode
+        $timedOut = [bool]$execution.TimedOut
 
         if ($output -and -not $Json) {
             $normalizedOutput = $output | ForEach-Object { $_.ToString() }
             $normalizedOutput | ForEach-Object { Write-Output $_ }
         }
 
+        $status = 'PASS'
         if ($exitCode -ne 0) {
+            if ($timedOut) {
+                $timedOutCount++
+                $status = 'TIMEOUT'
+            } else {
+                $status = 'FAIL'
+            }
             $failures += [PSCustomObject]@{
                 Script   = $name
                 ExitCode = $exitCode
+                Status   = $status
             }
             if (-not $Json) {
-                Write-Output "--- FAIL $name (exit=$exitCode) ---"
+                if ($timedOut) {
+                    Write-Output "--- TIMEOUT $name (timeout=${PerScriptTimeoutSec}s) ---"
+                } else {
+                    Write-Output "--- FAIL $name (exit=$exitCode) ---"
+                }
             }
         } else {
             if (-not $Json) {
@@ -97,7 +169,8 @@ try {
         $results += [PSCustomObject]@{
             SCRIPT   = $name
             EXIT_CODE = $exitCode
-            STATUS   = if ($exitCode -eq 0) { 'PASS' } else { 'FAIL' }
+            STATUS   = $status
+            TIMED_OUT = $timedOut
         }
 
         # Defensive cleanup to prevent lingering test-runner shell processes.
@@ -119,7 +192,9 @@ try {
             TOTAL_SCRIPTS      = $scripts.Count
             FAILED_SCRIPTS     = $failures.Count
             PASSED_SCRIPTS     = $scripts.Count - $failures.Count
+            TIMED_OUT_SCRIPTS  = $timedOutCount
             INCLUDE_DOCS_ONLY  = [bool]$IncludeDocsOnly
+            PER_SCRIPT_TIMEOUT_SEC = $PerScriptTimeoutSec
             ORIGINAL_BRANCH    = $originalBranch
             RESULTS            = @($results)
             STATUS             = if ($overallExitCode -eq 0) { 'PASSED' } else { 'FAILED' }
@@ -128,7 +203,14 @@ try {
         if ($overallExitCode -ne 0) {
             Write-Output ''
             Write-Output 'run_all_quality_checks: FAILED'
-            $failures | ForEach-Object { Write-Output ("  - " + $_.Script + " (exit=" + $_.ExitCode + ")") }
+            Write-Output ("timed_out_scripts: " + $timedOutCount)
+            $failures | ForEach-Object {
+                if ($_.Status -eq 'TIMEOUT') {
+                    Write-Output ("  - " + $_.Script + " (TIMEOUT, limit=" + $PerScriptTimeoutSec + "s)")
+                } else {
+                    Write-Output ("  - " + $_.Script + " (exit=" + $_.ExitCode + ")")
+                }
+            }
         } else {
             Write-Output ''
             Write-Output 'run_all_quality_checks: PASSED'
