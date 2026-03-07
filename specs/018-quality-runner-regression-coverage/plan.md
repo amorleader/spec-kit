@@ -1,11 +1,13 @@
-# Implementation Plan: Add Regression Coverage for Full Quality Runner
+# Implementation Plan: [FEATURE]
 
-**Branch**: `018-quality-runner-regression-coverage` | **Date**: 2026-03-06 | **Spec**: `/specs/018-quality-runner-regression-coverage/spec.md`
-**Input**: Feature specification from `/specs/018-quality-runner-regression-coverage/spec.md`
+**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+
+**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
 ## Summary
 
-新增 quality runner 的独立回归与文档校验脚本，确保 JSON 契约、文本兼容、分支稳定和文档一致性都可自动化门禁。
+[Extract from feature spec: primary requirement + technical approach from research]
 
 ## Technical Context
 
@@ -15,27 +17,27 @@
   the iteration process.
 -->
 
-**Language/Version**: PowerShell 5.1+  
-**Primary Dependencies**: tests/run_all_quality_checks.ps1  
-**Storage**: N/A  
-**Testing**: PowerShell regression + docs validation  
-**Target Platform**: Windows PowerShell / pwsh
-**Project Type**: test coverage enhancement  
-**Performance Goals**: unchanged  
-**Constraints**: no behavioral change to runner core logic  
-**Scale/Scope**: 3 new test assets + 018 docs
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- [x] Spec traceability exists from planned work to `spec.md` stories and requirements.
-- [x] CLI contract impact is documented (test/tooling only).
-- [x] Test-first approach is defined (new regression fails before docs are ready).
-- [x] Contract/integration coverage is planned for JSON fields and docs semantics.
-- [x] Observability impact is documented (clear failure labels and exit codes).
-- [x] Version impact is documented using semantic versioning (PATCH).
-- [x] Added complexity is minimal and justified.
+- [ ] Spec traceability exists from planned work to `spec.md` user stories and requirements.
+- [ ] CLI contract impact is documented (commands, arguments, stdout/stderr, JSON output).
+- [ ] Test-first approach is defined (tests written first and expected to fail before implementation).
+- [ ] Contract/integration coverage is planned for interface, schema, or cross-component changes.
+- [ ] Observability impact is documented (logs/metrics/traces needed to diagnose failures).
+- [ ] Version impact is documented using semantic versioning, including breaking-change notes.
+- [ ] Any added complexity is justified in `## Complexity Tracking` with rejected simpler alternatives.
 
 ## Project Structure
 
@@ -60,20 +62,49 @@ specs/[###-feature]/
 -->
 
 ```text
-tests/helpers/assert_run_all_quality_checks_json.ps1
-tests/run_all_quality_checks_regression.ps1
-tests/validate_run_all_quality_checks_docs.ps1
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
+
+tests/
+├── contract/
+├── integration/
+└── unit/
+
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: 仅补齐质量 runner 的测试与文档校验覆盖。
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
 ## Complexity Tracking
 
+> **Fill ONLY if Constitution Check has violations that must be justified**
+
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| N/A | 无复杂度升级 | 当前改动为测试资产增量 |
-
-## Release Impact
-- **SemVer**: PATCH
-- **User-visible change**: 增加 runner 专项回归与文档门禁脚本
-- **Backward compatibility**: runner 与其他脚本行为不变
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |

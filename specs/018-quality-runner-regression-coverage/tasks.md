@@ -9,9 +9,9 @@
 
 **Purpose**: Prepare feature documentation scaffolding and baseline contract context.
 
-- [ ] T001 Align feature summary and constraints in specs/018-quality-runner-regression-coverage/plan.md
-- [ ] T002 [P] Confirm user stories and acceptance criteria in specs/018-quality-runner-regression-coverage/spec.md
-- [ ] T003 [P] Capture regression decisions in specs/018-quality-runner-regression-coverage/research.md
+- [x] T001 Align feature summary and constraints in specs/018-quality-runner-regression-coverage/plan.md
+- [x] T002 [P] Confirm user stories and acceptance criteria in specs/018-quality-runner-regression-coverage/spec.md
+- [x] T003 [P] Capture regression decisions in specs/018-quality-runner-regression-coverage/research.md
 
 ---
 
@@ -19,9 +19,9 @@
 
 **Purpose**: Define shared assertion model and execution expectations used by all stories.
 
-- [ ] T004 Define regression assertion entities in specs/018-quality-runner-regression-coverage/data-model.md
-- [ ] T005 [P] Define required regression contract clauses in specs/018-quality-runner-regression-coverage/contracts/quality-runner-regression-contract.md
-- [ ] T006 Define runnable verification steps in specs/018-quality-runner-regression-coverage/quickstart.md
+- [x] T004 Define regression assertion entities in specs/018-quality-runner-regression-coverage/data-model.md
+- [x] T005 [P] Define required regression contract clauses in specs/018-quality-runner-regression-coverage/contracts/quality-runner-regression-contract.md
+- [x] T006 Define runnable verification steps in specs/018-quality-runner-regression-coverage/quickstart.md
 
 **Checkpoint**: Foundation complete; user stories can proceed independently.
 
@@ -35,9 +35,9 @@
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] Implement JSON contract assertion helper in tests/helpers/assert_run_all_quality_checks_json.ps1
-- [ ] T008 [US1] Implement JSON-mode regression flow in tests/run_all_quality_checks_regression.ps1
-- [ ] T009 [US1] Execute US1 JSON regression verification via tests/run_all_quality_checks_regression.ps1
+- [x] T007 [P] [US1] Implement JSON contract assertion helper in tests/helpers/assert_run_all_quality_checks_json.ps1
+- [x] T008 [US1] Implement JSON-mode regression flow in tests/run_all_quality_checks_regression.ps1
+- [x] T009 [US1] Execute US1 JSON regression verification via tests/run_all_quality_checks_regression.ps1
 
 **Checkpoint**: JSON regression contract is independently testable.
 
@@ -51,9 +51,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] Implement text-mode compatibility assertions in tests/run_all_quality_checks_regression.ps1
-- [ ] T011 [US2] Implement branch stability before/after checks in tests/run_all_quality_checks_regression.ps1
-- [ ] T012 [US2] Execute US2 text/branch regression verification via tests/run_all_quality_checks_regression.ps1
+- [x] T010 [US2] Implement text-mode compatibility assertions in tests/run_all_quality_checks_regression.ps1
+- [x] T011 [US2] Implement branch stability before/after checks in tests/run_all_quality_checks_regression.ps1
+- [x] T012 [US2] Execute US2 text/branch regression verification via tests/run_all_quality_checks_regression.ps1
 
 **Checkpoint**: Text compatibility and branch stability are independently testable.
 
@@ -67,10 +67,10 @@
 
 ### Implementation for User Story 3
 
-- [ ] T013 [P] [US3] Implement docs semantic validator in tests/validate_run_all_quality_checks_docs.ps1
-- [ ] T014 [US3] Document JSON required fields and stability semantics in specs/018-quality-runner-regression-coverage/contracts/quality-runner-regression-contract.md
-- [ ] T015 [US3] Align Json usage examples and expected outcomes in specs/018-quality-runner-regression-coverage/quickstart.md
-- [ ] T016 [US3] Execute docs validator verification via tests/validate_run_all_quality_checks_docs.ps1
+- [x] T013 [P] [US3] Implement docs semantic validator in tests/validate_run_all_quality_checks_docs.ps1
+- [x] T014 [US3] Document JSON required fields and stability semantics in specs/018-quality-runner-regression-coverage/contracts/quality-runner-regression-contract.md
+- [x] T015 [US3] Align Json usage examples and expected outcomes in specs/018-quality-runner-regression-coverage/quickstart.md
+- [x] T016 [US3] Execute docs validator verification via tests/validate_run_all_quality_checks_docs.ps1
 
 **Checkpoint**: Documentation gate is independently testable.
 
@@ -80,9 +80,9 @@
 
 **Purpose**: Final consistency pass across full docs-only aggregation and feature metadata.
 
-- [ ] T017 [P] Run docs-only aggregate verification with tests/run_all_quality_checks.ps1
-- [ ] T018 [P] Re-run standalone regression suite in tests/run_all_quality_checks_regression.ps1
-- [ ] T019 Update release impact notes in specs/018-quality-runner-regression-coverage/plan.md
+- [x] T017 [P] Run docs-only aggregate verification with tests/run_all_quality_checks.ps1
+- [x] T018 [P] Re-run standalone regression suite in tests/run_all_quality_checks_regression.ps1
+- [x] T019 Update release impact notes in specs/018-quality-runner-regression-coverage/plan.md
 
 ---
 
