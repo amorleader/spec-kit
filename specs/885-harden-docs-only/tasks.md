@@ -7,17 +7,17 @@
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Align feature scope in specs/885-harden-docs-only/spec.md
-- [ ] T002 [P] Align implementation context in specs/885-harden-docs-only/plan.md
-- [ ] T003 [P] Capture docs-only hardening decisions in specs/885-harden-docs-only/research.md
+- [x] T001 Align feature scope in specs/885-harden-docs-only/spec.md
+- [x] T002 [P] Align implementation context in specs/885-harden-docs-only/plan.md
+- [x] T003 [P] Capture docs-only hardening decisions in specs/885-harden-docs-only/research.md
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T004 Define docs-only entities in specs/885-harden-docs-only/data-model.md
-- [ ] T005 [P] Define docs-only contract in specs/885-harden-docs-only/contracts/docs-only-aggregate-contract.md
-- [ ] T006 Define runnable validation steps in specs/885-harden-docs-only/quickstart.md
+- [x] T004 Define docs-only entities in specs/885-harden-docs-only/data-model.md
+- [x] T005 [P] Define docs-only contract in specs/885-harden-docs-only/contracts/docs-only-aggregate-contract.md
+- [x] T006 Define runnable validation steps in specs/885-harden-docs-only/quickstart.md
 
 ---
 
@@ -26,11 +26,11 @@
 **Goal**: 稳定 docs-only 聚合执行与统计一致性。
 **Independent Test**: docs-only regression passes with stable counts and status propagation.
 
-- [ ] T007 [P] [US1] Add docs-only regression fixture in tests/run_all_quality_checks_docs_only_regression.ps1
-- [ ] T008 [US1] Add failing assertions for counts/status in tests/run_all_quality_checks_docs_only_regression.ps1
-- [ ] T009 [US1] Harden docs-only script selection logic in tests/run_all_quality_checks.ps1
-- [ ] T010 [US1] Harden docs-only status aggregation logic in tests/run_all_quality_checks.ps1
-- [ ] T011 [US1] Execute US1 verification via tests/run_all_quality_checks_docs_only_regression.ps1
+- [x] T007 [P] [US1] Add docs-only regression fixture in tests/run_all_quality_checks_docs_only_regression.ps1
+- [x] T008 [US1] Add failing assertions for counts/status in tests/run_all_quality_checks_docs_only_regression.ps1
+- [x] T009 [US1] Harden docs-only script selection logic in tests/run_all_quality_checks.ps1
+- [x] T010 [US1] Harden docs-only status aggregation logic in tests/run_all_quality_checks.ps1
+- [x] T011 [US1] Execute US1 verification via tests/run_all_quality_checks_docs_only_regression.ps1
 
 ---
 
@@ -39,9 +39,9 @@
 **Goal**: 保持 docs-only JSON/text 输出契约兼容稳定。
 **Independent Test**: docs-only output fields and structure remain backward compatible.
 
-- [ ] T012 [P] [US2] Add contract compatibility assertions in tests/run_all_quality_checks_docs_only_regression.ps1
-- [ ] T013 [US2] Verify docs-only JSON contract stability in tests/run_all_quality_checks.ps1
-- [ ] T014 [US2] Execute US2 verification via tests/run_all_quality_checks_docs_only_regression.ps1
+- [x] T012 [P] [US2] Add contract compatibility assertions in tests/run_all_quality_checks_docs_only_regression.ps1
+- [x] T013 [US2] Verify docs-only JSON contract stability in tests/run_all_quality_checks.ps1
+- [x] T014 [US2] Execute US2 verification via tests/run_all_quality_checks_docs_only_regression.ps1
 
 ---
 
@@ -50,19 +50,19 @@
 **Goal**: 固化 docs-only 加固约束到文档与自动化门禁。
 **Independent Test**: docs validator passes and is included in docs-only aggregate.
 
-- [ ] T015 [P] [US3] Add docs-only hardening docs validator in tests/validate_docs_only_hardening_docs.ps1
-- [ ] T016 [US3] Document docs-only constraints in specs/885-harden-docs-only/contracts/docs-only-aggregate-contract.md
-- [ ] T017 [US3] Execute docs validator verification via tests/validate_docs_only_hardening_docs.ps1
-- [ ] T018 [US3] Execute docs-only aggregate verification via tests/run_all_quality_checks.ps1
+- [x] T015 [P] [US3] Add docs-only hardening docs validator in tests/validate_docs_only_hardening_docs.ps1
+- [x] T016 [US3] Document docs-only constraints in specs/885-harden-docs-only/contracts/docs-only-aggregate-contract.md
+- [x] T017 [US3] Execute docs validator verification via tests/validate_docs_only_hardening_docs.ps1
+- [x] T018 [US3] Execute docs-only aggregate verification via tests/run_all_quality_checks.ps1
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T019 [P] Re-run docs-only aggregate check in tests/run_all_quality_checks.ps1
-- [ ] T020 [P] Re-run quality-runner baseline regression in tests/run_all_quality_checks_regression.ps1
-- [ ] T021 [P] Re-run status parser baseline regression in tests/run_all_quality_checks_status_parser_regression.ps1
-- [ ] T022 Update release impact in specs/885-harden-docs-only/plan.md
+- [x] T019 [P] Re-run docs-only aggregate check in tests/run_all_quality_checks.ps1
+- [x] T020 [P] Re-run quality-runner baseline regression in tests/run_all_quality_checks_regression.ps1
+- [x] T021 [P] Re-run status parser baseline regression in tests/run_all_quality_checks_status_parser_regression.ps1
+- [x] T022 Update release impact in specs/885-harden-docs-only/plan.md
 
 ---
 
