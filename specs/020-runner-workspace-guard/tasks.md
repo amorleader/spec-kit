@@ -1,4 +1,4 @@
-# Tasks: Protect Workspace Cleanliness After Quality Runner Execution
+﻿# Tasks: Protect Workspace Cleanliness After Quality Runner Execution
 
 **Input**: Design documents from `/specs/020-runner-workspace-guard/`
 **Prerequisites**: plan.md (required), spec.md (required), research.md, data-model.md, contracts/, quickstart.md
@@ -7,17 +7,17 @@
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Align feature scope in specs/020-runner-workspace-guard/spec.md
-- [ ] T002 [P] Align implementation context in specs/020-runner-workspace-guard/plan.md
-- [ ] T003 [P] Capture workspace-guard decisions in specs/020-runner-workspace-guard/research.md
+- [x] T001 Align feature scope in specs/020-runner-workspace-guard/spec.md
+- [x] T002 [P] Align implementation context in specs/020-runner-workspace-guard/plan.md
+- [x] T003 [P] Capture workspace-guard decisions in specs/020-runner-workspace-guard/research.md
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T004 Define recovery entities in specs/020-runner-workspace-guard/data-model.md
-- [ ] T005 [P] Define recovery/output contract in specs/020-runner-workspace-guard/contracts/quality-runner-workspace-guard-contract.md
-- [ ] T006 Define runnable validation steps in specs/020-runner-workspace-guard/quickstart.md
+- [x] T004 Define recovery entities in specs/020-runner-workspace-guard/data-model.md
+- [x] T005 [P] Define recovery/output contract in specs/020-runner-workspace-guard/contracts/quality-runner-workspace-guard-contract.md
+- [x] T006 Define runnable validation steps in specs/020-runner-workspace-guard/quickstart.md
 
 **Checkpoint**: Foundational contract complete.
 
@@ -27,11 +27,11 @@
 
 **Independent Test**: Run workspace-guard regression and verify runner leaves no new workspace pollution.
 
-- [ ] T007 [P] [US1] Add workspace pollution fixture flow in tests/run_all_quality_checks_workspace_guard_regression.ps1
-- [ ] T008 [US1] Add failing assertions for post-run cleanliness in tests/run_all_quality_checks_workspace_guard_regression.ps1
-- [ ] T009 [US1] Implement per-script workspace snapshot capture in tests/run_all_quality_checks.ps1
-- [ ] T010 [US1] Implement cleanup of newly introduced tracked/temp pollution in tests/run_all_quality_checks.ps1
-- [ ] T011 [US1] Execute US1 regression verification via tests/run_all_quality_checks_workspace_guard_regression.ps1
+- [x] T007 [P] [US1] Add workspace pollution fixture flow in tests/run_all_quality_checks_workspace_guard_regression.ps1
+- [x] T008 [US1] Add failing assertions for post-run cleanliness in tests/run_all_quality_checks_workspace_guard_regression.ps1
+- [x] T009 [US1] Implement per-script workspace snapshot capture in tests/run_all_quality_checks.ps1
+- [x] T010 [US1] Implement cleanup of newly introduced tracked/temp pollution in tests/run_all_quality_checks.ps1
+- [x] T011 [US1] Execute US1 regression verification via tests/run_all_quality_checks_workspace_guard_regression.ps1
 
 ---
 
@@ -39,10 +39,10 @@
 
 **Independent Test**: Run regression with pre-existing changes and verify they remain unchanged.
 
-- [ ] T012 [P] [US2] Add pre-existing-change preservation assertions in tests/run_all_quality_checks_workspace_guard_regression.ps1
-- [ ] T013 [US2] Implement baseline-preserving recovery filter in tests/run_all_quality_checks.ps1
-- [ ] T014 [US2] Add text diagnostics for skipped existing changes in tests/run_all_quality_checks.ps1
-- [ ] T015 [US2] Execute US2 regression verification via tests/run_all_quality_checks_workspace_guard_regression.ps1
+- [x] T012 [P] [US2] Add pre-existing-change preservation assertions in tests/run_all_quality_checks_workspace_guard_regression.ps1
+- [x] T013 [US2] Implement baseline-preserving recovery filter in tests/run_all_quality_checks.ps1
+- [x] T014 [US2] Add text diagnostics for skipped existing changes in tests/run_all_quality_checks.ps1
+- [x] T015 [US2] Execute US2 regression verification via tests/run_all_quality_checks_workspace_guard_regression.ps1
 
 ---
 
@@ -50,20 +50,20 @@
 
 **Independent Test**: Run workspace-guard docs validator and docs-only aggregate verification.
 
-- [ ] T016 [P] [US3] Add docs semantic validator in tests/validate_run_all_quality_checks_workspace_guard_docs.ps1
-- [ ] T017 [US3] Add JSON recovery stats fields in tests/run_all_quality_checks.ps1
-- [ ] T018 [US3] Document workspace-guard behavior in specs/020-runner-workspace-guard/contracts/quality-runner-workspace-guard-contract.md
-- [ ] T019 [US3] Execute docs validator verification via tests/validate_run_all_quality_checks_workspace_guard_docs.ps1
-- [ ] T020 [US3] Execute docs-only aggregate verification via tests/run_all_quality_checks.ps1
+- [x] T016 [P] [US3] Add docs semantic validator in tests/validate_run_all_quality_checks_workspace_guard_docs.ps1
+- [x] T017 [US3] Add JSON recovery stats fields in tests/run_all_quality_checks.ps1
+- [x] T018 [US3] Document workspace-guard behavior in specs/020-runner-workspace-guard/contracts/quality-runner-workspace-guard-contract.md
+- [x] T019 [US3] Execute docs validator verification via tests/validate_run_all_quality_checks_workspace_guard_docs.ps1
+- [x] T020 [US3] Execute docs-only aggregate verification via tests/run_all_quality_checks.ps1
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T021 [P] Re-run timeout regression baseline in tests/run_all_quality_checks_timeout_regression.ps1
-- [ ] T022 [P] Re-run existing docs validator baseline in tests/validate_run_all_quality_checks_docs.ps1
-- [ ] T023 [P] Re-run workspace-guard regression in tests/run_all_quality_checks_workspace_guard_regression.ps1
-- [ ] T024 Update release impact notes in specs/020-runner-workspace-guard/plan.md
+- [x] T021 [P] Re-run timeout regression baseline in tests/run_all_quality_checks_timeout_regression.ps1
+- [x] T022 [P] Re-run existing docs validator baseline in tests/validate_run_all_quality_checks_docs.ps1
+- [x] T023 [P] Re-run workspace-guard regression in tests/run_all_quality_checks_workspace_guard_regression.ps1
+- [x] T024 Update release impact notes in specs/020-runner-workspace-guard/plan.md
 
 ---
 
@@ -100,3 +100,4 @@ Task: "T009 [US1] Implement per-script workspace snapshot capture in tests/run_a
 1. Add US2 protections for existing local changes.
 2. Add US3 docs gate and JSON recovery stats.
 3. Run polish validations.
+

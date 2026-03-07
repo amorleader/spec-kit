@@ -1,4 +1,4 @@
-# Tasks: Stabilize Text Output Check Behavior
+﻿# Tasks: Stabilize Text Output Check Behavior
 
 **Input**: Design documents from `/specs/884-stabilize-text-output/`
 **Prerequisites**: plan.md (required), spec.md (required), research.md, data-model.md, contracts/, quickstart.md
@@ -7,17 +7,17 @@
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Align feature scope in specs/884-stabilize-text-output/spec.md
-- [ ] T002 [P] Align implementation context in specs/884-stabilize-text-output/plan.md
-- [ ] T003 [P] Capture text-output decisions in specs/884-stabilize-text-output/research.md
+- [x] T001 Align feature scope in specs/884-stabilize-text-output/spec.md
+- [x] T002 [P] Align implementation context in specs/884-stabilize-text-output/plan.md
+- [x] T003 [P] Capture text-output decisions in specs/884-stabilize-text-output/research.md
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T004 Define text-output entities in specs/884-stabilize-text-output/data-model.md
-- [ ] T005 [P] Define text-output contract in specs/884-stabilize-text-output/contracts/text-output-check-contract.md
-- [ ] T006 Define runnable validation steps in specs/884-stabilize-text-output/quickstart.md
+- [x] T004 Define text-output entities in specs/884-stabilize-text-output/data-model.md
+- [x] T005 [P] Define text-output contract in specs/884-stabilize-text-output/contracts/text-output-check-contract.md
+- [x] T006 Define runnable validation steps in specs/884-stabilize-text-output/quickstart.md
 
 ---
 
@@ -26,12 +26,12 @@
 **Goal**: 锁定文本模式关键标签和输出顺序，避免格式漂移。
 **Independent Test**: text-output regression passes in success and failure scenarios.
 
-- [ ] T007 [P] [US1] Add text-output regression fixture in tests/text_output_check_regression.ps1
-- [ ] T008 [US1] Add failing assertions for key labels/order in tests/text_output_check_regression.ps1
-- [ ] T009 [US1] Stabilize text output in .specify/scripts/powershell/check-prerequisites.ps1
-- [ ] T010 [US1] Stabilize text output in .specify/scripts/powershell/setup-plan.ps1
-- [ ] T011 [US1] Stabilize text output in .specify/scripts/powershell/create-new-feature.ps1
-- [ ] T012 [US1] Execute US1 verification via tests/text_output_check_regression.ps1
+- [x] T007 [P] [US1] Add text-output regression fixture in tests/text_output_check_regression.ps1
+- [x] T008 [US1] Add failing assertions for key labels/order in tests/text_output_check_regression.ps1
+- [x] T009 [US1] Stabilize text output in .specify/scripts/powershell/check-prerequisites.ps1
+- [x] T010 [US1] Stabilize text output in .specify/scripts/powershell/setup-plan.ps1
+- [x] T011 [US1] Stabilize text output in .specify/scripts/powershell/create-new-feature.ps1
+- [x] T012 [US1] Execute US1 verification via tests/text_output_check_regression.ps1
 
 ---
 
@@ -40,10 +40,10 @@
 **Goal**: 统一失败路径的文本提示语义与结构。
 **Independent Test**: failure messages follow a consistent heading + hint style across scripts.
 
-- [ ] T013 [P] [US2] Add failure-hint consistency assertions in tests/text_output_check_regression.ps1
-- [ ] T014 [US2] Normalize text failure hints in .specify/scripts/powershell/check-prerequisites.ps1
-- [ ] T015 [US2] Normalize text failure hints in .specify/scripts/powershell/setup-plan.ps1
-- [ ] T016 [US2] Execute US2 verification via tests/text_output_check_regression.ps1
+- [x] T013 [P] [US2] Add failure-hint consistency assertions in tests/text_output_check_regression.ps1
+- [x] T014 [US2] Normalize text failure hints in .specify/scripts/powershell/check-prerequisites.ps1
+- [x] T015 [US2] Normalize text failure hints in .specify/scripts/powershell/setup-plan.ps1
+- [x] T016 [US2] Execute US2 verification via tests/text_output_check_regression.ps1
 
 ---
 
@@ -52,19 +52,19 @@
 **Goal**: 将文本输出约束固化到文档和自动化门禁。
 **Independent Test**: docs validator passes and is included in docs-only aggregate.
 
-- [ ] T017 [P] [US3] Add text-output docs validator in tests/validate_text_output_check_docs.ps1
-- [ ] T018 [US3] Document text-output constraints in specs/884-stabilize-text-output/contracts/text-output-check-contract.md
-- [ ] T019 [US3] Execute docs validator verification via tests/validate_text_output_check_docs.ps1
-- [ ] T020 [US3] Execute docs-only aggregate verification via tests/run_all_quality_checks.ps1
+- [x] T017 [P] [US3] Add text-output docs validator in tests/validate_text_output_check_docs.ps1
+- [x] T018 [US3] Document text-output constraints in specs/884-stabilize-text-output/contracts/text-output-check-contract.md
+- [x] T019 [US3] Execute docs validator verification via tests/validate_text_output_check_docs.ps1
+- [x] T020 [US3] Execute docs-only aggregate verification via tests/run_all_quality_checks.ps1
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T021 [P] Re-run create-new-feature regression in tests/create_new_feature_regression.ps1
-- [ ] T022 [P] Re-run setup-plan regression in tests/setup_plan_regression.ps1
-- [ ] T023 [P] Re-run check-prerequisites regression in tests/check_prerequisites_regression.ps1
-- [ ] T024 Update release impact in specs/884-stabilize-text-output/plan.md
+- [x] T021 [P] Re-run create-new-feature regression in tests/create_new_feature_regression.ps1
+- [x] T022 [P] Re-run setup-plan regression in tests/setup_plan_regression.ps1
+- [x] T023 [P] Re-run check-prerequisites regression in tests/check_prerequisites_regression.ps1
+- [x] T024 Update release impact in specs/884-stabilize-text-output/plan.md
 
 ---
 

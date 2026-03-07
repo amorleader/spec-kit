@@ -242,7 +242,25 @@ function Restore-WorkspaceChanges {
     }
 }
 
-. (Join-Path $RepoRoot 'tests/helpers/process_hygiene.ps1')
+$processHygienePath = Join-Path $RepoRoot 'tests/helpers/process_hygiene.ps1'
+if (Test-Path $processHygienePath) {
+    . $processHygienePath
+} else {
+    function Remove-TestZombieProcesses {
+        param(
+            [string]$RepoRoot,
+            [int]$ExcludeProcessId = $PID
+        )
+
+        # Fallback for fixture repos that do not include helper files.
+        [PSCustomObject]@{
+            KilledCount = 0
+            FailedCount = 0
+            Killed      = @()
+            Failed      = @()
+        }
+    }
+}
 
 Push-Location $RepoRoot
 try {
