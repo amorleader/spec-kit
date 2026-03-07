@@ -9,9 +9,9 @@
 
 **Purpose**: Initialize feature documentation and baseline task scaffolding.
 
-- [ ] T001 Align feature metadata in specs/019-runner-timeout-guard/spec.md
-- [ ] T002 [P] Align implementation context in specs/019-runner-timeout-guard/plan.md
-- [ ] T003 [P] Record timeout strategy decisions in specs/019-runner-timeout-guard/research.md
+- [x] T001 Align feature metadata in specs/019-runner-timeout-guard/spec.md
+- [x] T002 [P] Align implementation context in specs/019-runner-timeout-guard/plan.md
+- [x] T003 [P] Record timeout strategy decisions in specs/019-runner-timeout-guard/research.md
 
 ---
 
@@ -19,9 +19,9 @@
 
 **Purpose**: Define shared timeout contract and assertion model used by all stories.
 
-- [ ] T004 Define timeout entities in specs/019-runner-timeout-guard/data-model.md
-- [ ] T005 [P] Define CLI/output timeout contract in specs/019-runner-timeout-guard/contracts/quality-runner-timeout-contract.md
-- [ ] T006 Define timeout validation quickstart in specs/019-runner-timeout-guard/quickstart.md
+- [x] T004 Define timeout entities in specs/019-runner-timeout-guard/data-model.md
+- [x] T005 [P] Define CLI/output timeout contract in specs/019-runner-timeout-guard/contracts/quality-runner-timeout-contract.md
+- [x] T006 Define timeout validation quickstart in specs/019-runner-timeout-guard/quickstart.md
 
 **Checkpoint**: Timeout foundation is complete; user stories can proceed independently.
 
@@ -35,14 +35,14 @@
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Add hanging-script regression fixture flow in tests/run_all_quality_checks_timeout_regression.ps1
-- [ ] T008 [US1] Add failing assertion for timeout termination/continuation in tests/run_all_quality_checks_timeout_regression.ps1
+- [x] T007 [P] [US1] Add hanging-script regression fixture flow in tests/run_all_quality_checks_timeout_regression.ps1
+- [x] T008 [US1] Add failing assertion for timeout termination/continuation in tests/run_all_quality_checks_timeout_regression.ps1
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Add `-PerScriptTimeoutSec` parameter handling in tests/run_all_quality_checks.ps1
-- [ ] T010 [US1] Implement per-script timeout execution and forced termination in tests/run_all_quality_checks.ps1
-- [ ] T011 [US1] Execute US1 timeout regression verification via tests/run_all_quality_checks_timeout_regression.ps1
+- [x] T009 [US1] Add `-PerScriptTimeoutSec` parameter handling in tests/run_all_quality_checks.ps1
+- [x] T010 [US1] Implement per-script timeout execution and forced termination in tests/run_all_quality_checks.ps1
+- [x] T011 [US1] Execute US1 timeout regression verification via tests/run_all_quality_checks_timeout_regression.ps1
 
 **Checkpoint**: Timeout guard execution is independently testable.
 
@@ -56,14 +56,14 @@
 
 ### Tests for User Story 2
 
-- [ ] T012 [P] [US2] Add JSON timeout-field assertions in tests/run_all_quality_checks_timeout_regression.ps1
-- [ ] T013 [US2] Add text summary timeout assertions in tests/run_all_quality_checks_timeout_regression.ps1
+- [x] T012 [P] [US2] Add JSON timeout-field assertions in tests/run_all_quality_checks_timeout_regression.ps1
+- [x] T013 [US2] Add text summary timeout assertions in tests/run_all_quality_checks_timeout_regression.ps1
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] Add timeout count and status mapping in JSON summary in tests/run_all_quality_checks.ps1
-- [ ] T015 [US2] Add timeout labels and summary details in text output in tests/run_all_quality_checks.ps1
-- [ ] T016 [US2] Execute US2 observability regression verification via tests/run_all_quality_checks_timeout_regression.ps1
+- [x] T014 [US2] Add timeout count and status mapping in JSON summary in tests/run_all_quality_checks.ps1
+- [x] T015 [US2] Add timeout labels and summary details in text output in tests/run_all_quality_checks.ps1
+- [x] T016 [US2] Execute US2 observability regression verification via tests/run_all_quality_checks_timeout_regression.ps1
 
 **Checkpoint**: Timeout observability is independently testable.
 
@@ -77,14 +77,14 @@
 
 ### Tests for User Story 3
 
-- [ ] T017 [P] [US3] Add docs semantic validator for timeout contract in tests/validate_run_all_quality_checks_timeout_docs.ps1
+- [x] T017 [P] [US3] Add docs semantic validator for timeout contract in tests/validate_run_all_quality_checks_timeout_docs.ps1
 
 ### Implementation for User Story 3
 
-- [ ] T018 [US3] Document timeout CLI/output contract in specs/019-runner-timeout-guard/contracts/quality-runner-timeout-contract.md
-- [ ] T019 [US3] Document timeout usage examples in specs/019-runner-timeout-guard/quickstart.md
-- [ ] T020 [US3] Execute docs validator verification via tests/validate_run_all_quality_checks_timeout_docs.ps1
-- [ ] T021 [US3] Execute docs-only aggregate verification with timeout option in tests/run_all_quality_checks.ps1
+- [x] T018 [US3] Document timeout CLI/output contract in specs/019-runner-timeout-guard/contracts/quality-runner-timeout-contract.md
+- [x] T019 [US3] Document timeout usage examples in specs/019-runner-timeout-guard/quickstart.md
+- [x] T020 [US3] Execute docs validator verification via tests/validate_run_all_quality_checks_timeout_docs.ps1
+- [x] T021 [US3] Execute docs-only aggregate verification with timeout option in tests/run_all_quality_checks.ps1
 
 **Checkpoint**: Docs gate for timeout behavior is independently testable.
 
@@ -94,9 +94,9 @@
 
 **Purpose**: Final hardening and compatibility checks across all stories.
 
-- [ ] T022 [P] Re-run full timeout regression suite in tests/run_all_quality_checks_timeout_regression.ps1
-- [ ] T023 [P] Re-run existing docs validator baseline in tests/validate_run_all_quality_checks_docs.ps1
-- [ ] T024 Update release impact details in specs/019-runner-timeout-guard/plan.md
+- [x] T022 [P] Re-run full timeout regression suite in tests/run_all_quality_checks_timeout_regression.ps1
+- [x] T023 [P] Re-run existing docs validator baseline in tests/validate_run_all_quality_checks_docs.ps1
+- [x] T024 Update release impact details in specs/019-runner-timeout-guard/plan.md
 
 ---
 
