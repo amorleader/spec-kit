@@ -72,6 +72,15 @@ function Invoke-TestScript {
 function Get-WorkspaceSnapshot {
     param([string]$Root)
 
+    function Normalize-OnePath {
+        param([string]$Value)
+        $normalized = $Value.Trim()
+        if ($normalized.StartsWith('"') -and $normalized.EndsWith('"') -and $normalized.Length -ge 2) {
+            $normalized = $normalized.Substring(1, $normalized.Length - 2)
+        }
+        return $normalized.Trim()
+    }
+
     $snapshot = [PSCustomObject]@{
         Tracked   = @()
         Untracked = @()
@@ -86,12 +95,32 @@ function Get-WorkspaceSnapshot {
                 $text = $line.ToString()
                 if ($text.Length -lt 4) { continue }
                 $code = $text.Substring(0, 2)
-                $path = $text.Substring(3).Trim()
-                if ([string]::IsNullOrWhiteSpace($path)) { continue }
-                if ($code -eq '??') {
-                    $snapshot.Untracked += $path
+                $rawPath = $text.Substring(3).Trim()
+                if ([string]::IsNullOrWhiteSpace($rawPath)) { continue }
+
+                $parsedPaths = @()
+                if ($rawPath -match ' -> ') {
+                    $parts = $rawPath -split ' -> ', 2
+                    if ($parts.Count -eq 2) {
+                        $parsedPaths += Normalize-OnePath -Value $parts[0]
+                        $parsedPaths += Normalize-OnePath -Value $parts[1]
+                    }
                 } else {
-                    $snapshot.Tracked += $path
+                    $parsedPaths += Normalize-OnePath -Value $rawPath
+                }
+
+                if ($code -eq '??') {
+                    foreach ($path in $parsedPaths) {
+                        if (-not [string]::IsNullOrWhiteSpace($path)) {
+                            $snapshot.Untracked += $path
+                        }
+                    }
+                } else {
+                    foreach ($path in $parsedPaths) {
+                        if (-not [string]::IsNullOrWhiteSpace($path)) {
+                            $snapshot.Tracked += $path
+                        }
+                    }
                 }
             }
         }
@@ -116,11 +145,14 @@ function Restore-WorkspaceChanges {
     foreach ($path in @($Before.Untracked)) { $beforeUntrackedSet[$path] = $true }
 
     $revertedTracked = @()
+    $introducedTrackedCandidates = @()
     foreach ($path in @($After.Tracked)) {
         if (-not $beforeTrackedSet.ContainsKey($path)) {
+            $introducedTrackedCandidates += $path
             $previousEap = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
             try {
+                $null = git -C $Root reset HEAD -- "$path" 2>$null
                 $null = git -C $Root checkout -- "$path" 2>$null
                 if ($LASTEXITCODE -eq 0) {
                     $revertedTracked += $path
@@ -128,6 +160,33 @@ function Restore-WorkspaceChanges {
             } finally {
                 $ErrorActionPreference = $previousEap
             }
+        }
+    }
+
+    foreach ($path in @($introducedTrackedCandidates)) {
+        if ($beforeUntrackedSet.ContainsKey($path)) {
+            continue
+        }
+
+        $previousEap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        $trackedInHead = $false
+        try {
+            $null = git -C $Root cat-file -e ("HEAD:" + $path) 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                $trackedInHead = $true
+            }
+        } finally {
+            $ErrorActionPreference = $previousEap
+        }
+
+        if ($trackedInHead) {
+            continue
+        }
+
+        $absolute = Join-Path $Root $path
+        if (Test-Path $absolute) {
+            Remove-Item -Path $absolute -Force -ErrorAction SilentlyContinue
         }
     }
 
