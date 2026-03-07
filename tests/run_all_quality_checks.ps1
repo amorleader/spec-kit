@@ -35,21 +35,37 @@ function Invoke-TestScript {
     try {
         $null = $process.Start()
 
+        # Consume redirected streams asynchronously to prevent pipe buffer deadlocks.
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+
         $timedOut = $false
         if ($TimeoutSec -gt 0) {
             if (-not $process.WaitForExit($TimeoutSec * 1000)) {
                 $timedOut = $true
                 try {
-                    $process.Kill()
+                    $null = & taskkill /PID $process.Id /T /F 2>$null
                 } catch {
+                }
+                if (-not $process.HasExited) {
+                    try {
+                        $process.Kill()
+                    } catch {
+                    }
                 }
             }
         }
 
-        $process.WaitForExit()
+        if ($timedOut) {
+            $null = $process.WaitForExit(5000)
+        } else {
+            $process.WaitForExit()
+        }
 
-        $stdout = $process.StandardOutput.ReadToEnd()
-        $stderr = $process.StandardError.ReadToEnd()
+        $null = $stdoutTask.Wait(5000)
+        $null = $stderrTask.Wait(5000)
+        $stdout = $stdoutTask.Result
+        $stderr = $stderrTask.Result
         $combined = @()
         if (-not [string]::IsNullOrEmpty($stdout)) {
             $combined += ($stdout -split "`r?`n")
