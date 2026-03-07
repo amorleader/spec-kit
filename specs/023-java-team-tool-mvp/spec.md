@@ -26,7 +26,7 @@ The MVP must be reproducible by one developer and produce consistent output arti
 
 ### In Scope (MVP)
 
-- One reference stack: Java 17 + Spring Boot + Maven + MySQL
+- One reference stack: Java 11 + Spring Boot (default 2.7.x) + Maven + PostgreSQL (pgsql)
 - One reference project type: REST CRUD service
 - Structured artifacts per requirement:
   - `spec.md`

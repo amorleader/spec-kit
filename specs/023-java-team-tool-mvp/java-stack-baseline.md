@@ -6,15 +6,15 @@ This baseline defines the default stack for the first runnable MVP demo.
 
 ## Runtime
 
-- JDK: 17 (LTS)
-- Spring Boot: 3.x
-- Build Tool: Maven (wrapper preferred)
+- JDK: 11
+- Spring Boot: 2.7.x (default for JDK 11 compatibility)
+- Build Tool: Maven (default)
 - Packaging: executable jar
 
 ## Data Layer
 
-- Database: MySQL 8.x
-- Migration: Flyway (recommended for team phase)
+- Database: PostgreSQL (pgsql)
+- Migration: Default mode (manual SQL allowed in MVP; Flyway optional in team phase)
 - Local profile: `local` with standalone DB connection
 
 ## Core Dependencies
@@ -22,7 +22,7 @@ This baseline defines the default stack for the first runnable MVP demo.
 - `spring-boot-starter-web`
 - `spring-boot-starter-validation`
 - `spring-boot-starter-data-jpa`
-- `mysql-connector-j`
+- `org.postgresql:postgresql`
 - `spring-boot-starter-test`
 
 ## Build and Verification Commands
@@ -38,7 +38,7 @@ This baseline defines the default stack for the first runnable MVP demo.
 
 - Startup succeeds under local profile.
 - Core CRUD API responds correctly.
-- Build + tests + package can run on a clean machine with JDK 17 + Maven.
+- Build + tests + package can run on a clean machine with JDK 11 + Maven.
 
 ## Constraints
 

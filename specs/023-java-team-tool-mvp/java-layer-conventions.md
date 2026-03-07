@@ -4,14 +4,14 @@
 
 Use one root package and fixed layer folders:
 
-- `com.<org>.<app>.controller`
-- `com.<org>.<app>.service`
-- `com.<org>.<app>.repository`
-- `com.<org>.<app>.domain` (entity/aggregate)
-- `com.<org>.<app>.dto`
-- `com.<org>.<app>.mapper` (if mapping logic grows)
-- `com.<org>.<app>.config`
-- `com.<org>.<app>.exception`
+- `com.amor.speckit.mvp.controller`
+- `com.amor.speckit.mvp.service`
+- `com.amor.speckit.mvp.repository`
+- `com.amor.speckit.mvp.domain` (entity/aggregate)
+- `com.amor.speckit.mvp.dto`
+- `com.amor.speckit.mvp.mapper` (if mapping logic grows)
+- `com.amor.speckit.mvp.config`
+- `com.amor.speckit.mvp.exception`
 
 ## Layer Responsibilities
 
@@ -40,8 +40,9 @@ Use one root package and fixed layer folders:
 ## API Conventions
 
 - REST path style: `/api/v1/<resources>`
-- Return object uses consistent envelope in team phase (MVP can keep direct payload with clear error schema).
-- Validation uses `jakarta.validation` annotations and `@Valid`.
+- Response format is JSON.
+- Prefer a consistent JSON envelope for success and error responses.
+- Validation uses Bean Validation annotations with `@Valid`.
 
 ## Transaction Rules
 

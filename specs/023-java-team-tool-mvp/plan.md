@@ -42,11 +42,12 @@ Deliver a personal-first, team-ready MVP workflow that can take Java business re
 
 ## Technical Decisions (MVP)
 
-- Language: Java 17
-- Framework: Spring Boot 3.x
-- Build: Maven
-- Database: MySQL (with local profile)
-- Testing: JUnit 5 + Spring Boot Test
+- Language: Java 11
+- Framework: Spring Boot 2.7.x (default with JDK 11)
+- Build: Maven (default)
+- Database: PostgreSQL (pgsql, local profile)
+- Migration: Default mode (manual SQL first, Flyway optional)
+- Testing: Default baseline (JUnit 5 + Spring Boot Test)
 - Packaging: executable fat jar
 
 ## Deliverables

@@ -6,6 +6,7 @@
 - [ ] Validation errors return clear field-level messages.
 - [ ] Business exceptions map to explicit HTTP status codes.
 - [ ] Unexpected exceptions return sanitized error response (no stack trace leak).
+- [ ] API responses are JSON for both success and error paths.
 
 ## Logging
 
