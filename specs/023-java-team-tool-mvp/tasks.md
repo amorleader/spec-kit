@@ -8,10 +8,10 @@
 
 ## Phase 2 - Workflow Artifact Standardization
 
-- [ ] T004 Define requirement input template for business requests
-- [ ] T005 Define `spec.md` template constraints for Java service features
-- [ ] T006 Define `plan.md` template constraints for architecture and data model
-- [ ] T007 Define `tasks.md` template constraints for execution order and test-first flow
+- [x] T004 Define requirement input template for business requests
+- [x] T005 Define `spec.md` template constraints for Java service features
+- [x] T006 Define `plan.md` template constraints for architecture and data model
+- [x] T007 Define `tasks.md` template constraints for execution order and test-first flow
 
 ## Phase 3 - Demo 1 (Personal MVP Run)
 

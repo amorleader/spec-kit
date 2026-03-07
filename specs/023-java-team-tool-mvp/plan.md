@@ -58,6 +58,10 @@ Deliver a personal-first, team-ready MVP workflow that can take Java business re
 - `specs/023-java-team-tool-mvp/java-stack-baseline.md`
 - `specs/023-java-team-tool-mvp/java-layer-conventions.md`
 - `specs/023-java-team-tool-mvp/java-coding-checklist.md`
+- `specs/023-java-team-tool-mvp/requirement-input-template.md`
+- `specs/023-java-team-tool-mvp/spec-template-constraints.md`
+- `specs/023-java-team-tool-mvp/plan-template-constraints.md`
+- `specs/023-java-team-tool-mvp/tasks-template-constraints.md`
 - `specs/023-java-team-tool-mvp/quickstart.md`
 - `specs/023-java-team-tool-mvp/contracts/mvp-gate-checklist.md`
 
