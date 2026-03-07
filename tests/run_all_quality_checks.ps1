@@ -242,18 +242,20 @@ try {
         $ErrorActionPreference = $previousEap
     }
 
-    $regressions = @()
-    if (-not $IncludeDocsOnly) {
-        $regressions = Get-ChildItem -Path (Join-Path $RepoRoot 'tests') -Filter '*_regression.ps1' |
-            Sort-Object Name |
-            ForEach-Object { $_.FullName }
-    }
-
-    $docChecks = Get-ChildItem -Path (Join-Path $RepoRoot 'tests') -Filter 'validate_*_docs.ps1' |
+    $testsDir = Join-Path $RepoRoot 'tests'
+    $docChecks = Get-ChildItem -Path $testsDir -Filter 'validate_*_docs.ps1' |
         Sort-Object Name |
         ForEach-Object { $_.FullName }
 
-    $scripts = @($regressions + $docChecks)
+    if ($IncludeDocsOnly) {
+        # Docs-only mode must execute docs validators only.
+        $scripts = @($docChecks)
+    } else {
+        $regressions = Get-ChildItem -Path $testsDir -Filter '*_regression.ps1' |
+            Sort-Object Name |
+            ForEach-Object { $_.FullName }
+        $scripts = @($regressions + $docChecks)
+    }
     $results = @()
     $overallExitCode = 0
     $recoveredTrackedChanges = 0
@@ -344,15 +346,16 @@ try {
         }
     }
 
-    if ($failures.Count -gt 0) {
-        $overallExitCode = 1
-    }
+    $failedCount = @($results | Where-Object { $_.STATUS -ne 'PASS' }).Count
+    $timedOutCount = @($results | Where-Object { $_.STATUS -eq 'TIMEOUT' }).Count
+    $passedCount = $results.Count - $failedCount
+    $overallExitCode = if ($failedCount -gt 0) { 1 } else { 0 }
 
     if ($Json) {
         [PSCustomObject][ordered]@{
             TOTAL_SCRIPTS      = $scripts.Count
-            FAILED_SCRIPTS     = $failures.Count
-            PASSED_SCRIPTS     = $scripts.Count - $failures.Count
+            FAILED_SCRIPTS     = $failedCount
+            PASSED_SCRIPTS     = $passedCount
             TIMED_OUT_SCRIPTS  = $timedOutCount
             RECOVERED_TRACKED_CHANGES = $recoveredTrackedChanges
             DELETED_TEMP_FILES = $deletedTempFiles
