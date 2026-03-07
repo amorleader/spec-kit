@@ -213,6 +213,8 @@ function Restore-WorkspaceChanges {
     }
 }
 
+. (Join-Path $RepoRoot 'tests/helpers/process_hygiene.ps1')
+
 Push-Location $RepoRoot
 try {
     $originalBranch = $null
@@ -329,6 +331,15 @@ try {
             STATUS   = $status
             TIMED_OUT = $timedOut
         }
+
+        # Defensive cleanup to prevent lingering test-runner shell processes.
+        $cleanupResult = Remove-TestZombieProcesses -RepoRoot $RepoRoot -ExcludeProcessId $PID
+        if (-not $Json -and $cleanupResult.KilledCount -gt 0) {
+            Write-Output ("run_all_quality_checks: cleaned zombie processes after {0} (killed={1})" -f $name, $cleanupResult.KilledCount)
+        }
+        if (-not $Json -and $cleanupResult.FailedCount -gt 0) {
+            Write-Warning ("run_all_quality_checks: zombie cleanup had failures after {0} (failed={1})" -f $name, $cleanupResult.FailedCount)
+        }
     }
 
     if ($failures.Count -gt 0) {
@@ -374,6 +385,14 @@ try {
     exit $overallExitCode
 }
 finally {
+    $finalCleanupResult = Remove-TestZombieProcesses -RepoRoot $RepoRoot -ExcludeProcessId $PID
+    if (-not $Json -and $finalCleanupResult.KilledCount -gt 0) {
+        Write-Output ("run_all_quality_checks: final zombie cleanup killed={0}" -f $finalCleanupResult.KilledCount)
+    }
+    if (-not $Json -and $finalCleanupResult.FailedCount -gt 0) {
+        Write-Warning ("run_all_quality_checks: final zombie cleanup failed={0}" -f $finalCleanupResult.FailedCount)
+    }
+
     if ($hasGitRepo -and -not [string]::IsNullOrWhiteSpace($originalBranch) -and $originalBranch -ne 'HEAD') {
         $previousEap = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
