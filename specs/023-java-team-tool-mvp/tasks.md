@@ -15,14 +15,14 @@
 
 ## Phase 3 - Demo 1 (Personal MVP Run)
 
-- [ ] T008 Select sample requirement A (CRUD business case)
-- [ ] T009 Generate and review `spec.md` for requirement A
-- [ ] T010 Generate and review `plan.md` for requirement A
-- [ ] T011 Generate and review `tasks.md` for requirement A
-- [ ] T012 Implement code for requirement A following tasks
-- [ ] T013 Run tests and capture test report for requirement A
-- [ ] T014 Build jar and validate startup command for requirement A
-- [ ] T015 Record demo A acceptance result and issues
+- [x] T008 Select sample requirement A (CRUD business case)
+- [x] T009 Generate and review `spec.md` for requirement A
+- [x] T010 Generate and review `plan.md` for requirement A
+- [x] T011 Generate and review `tasks.md` for requirement A
+- [x] T012 Implement code for requirement A following tasks
+- [x] T013 Run tests and capture test report for requirement A
+- [x] T014 Build jar and validate startup command for requirement A
+- [x] T015 Record demo A acceptance result and issues
 
 ## Phase 4 - Demo 2 (Reproducibility Run)
 

@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: mhr-build-planner
+
+server:
+  port: 8080
+
+app:
+  build-planner:
+    max-results-min: 1
+    max-results-max: 20

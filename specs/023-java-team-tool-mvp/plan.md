@@ -64,6 +64,10 @@ Deliver a personal-first, team-ready MVP workflow that can take Java business re
 - `specs/023-java-team-tool-mvp/tasks-template-constraints.md`
 - `specs/023-java-team-tool-mvp/quickstart.md`
 - `specs/023-java-team-tool-mvp/contracts/mvp-gate-checklist.md`
+- `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/request.md`
+- `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/spec.md`
+- `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/plan.md`
+- `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/tasks.md`
 
 ## Quality Gates
 
