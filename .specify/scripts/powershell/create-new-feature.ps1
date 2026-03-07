@@ -6,6 +6,8 @@ param(
     [string]$ShortName,
     [int]$Number = 0,
     [switch]$Help,
+    [Parameter(Position = 0)]
+    [string]$Description,
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$FeatureDescription
 )
@@ -22,18 +24,29 @@ if ($Help) {
     Write-Host "  -Help               Show this help message"
     Write-Host ""
     Write-Host "Examples:"
+    Write-Host "  ./create-new-feature.ps1 -Json 'Add user authentication system'"
+    Write-Host "  ./create-new-feature.ps1 'Add user authentication system' -Json"
     Write-Host "  ./create-new-feature.ps1 'Add user authentication system' -ShortName 'user-auth'"
     Write-Host "  ./create-new-feature.ps1 'Implement OAuth2 integration for API'"
     exit 0
 }
 
+# Consolidate feature description input from positional and remaining arguments
+$descriptionParts = @()
+if (-not [string]::IsNullOrWhiteSpace($Description)) {
+    $descriptionParts += $Description
+}
+if ($FeatureDescription -and $FeatureDescription.Count -gt 0) {
+    $descriptionParts += $FeatureDescription
+}
+
 # Check if feature description provided
-if (-not $FeatureDescription -or $FeatureDescription.Count -eq 0) {
+if (-not $descriptionParts -or $descriptionParts.Count -eq 0) {
     Write-Error "Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] <feature description>"
     exit 1
 }
 
-$featureDesc = ($FeatureDescription -join ' ').Trim()
+$featureDesc = ($descriptionParts -join ' ').Trim()
 
 # Validate description is not empty after trimming (e.g., user passed only whitespace)
 if ([string]::IsNullOrWhiteSpace($featureDesc)) {
@@ -71,7 +84,7 @@ function Get-HighestNumberFromSpecs {
     $highest = 0
     if (Test-Path $SpecsDir) {
         Get-ChildItem -Path $SpecsDir -Directory | ForEach-Object {
-            if ($_.Name -match '^(\d+)') {
+            if ($_.Name -match '^(\d{3})-') {
                 $num = [int]$matches[1]
                 if ($num -gt $highest) { $highest = $num }
             }
@@ -91,8 +104,8 @@ function Get-HighestNumberFromBranches {
                 # Clean branch name: remove leading markers and remote prefixes
                 $cleanBranch = $branch.Trim() -replace '^\*?\s+', '' -replace '^remotes/[^/]+/', ''
                 
-                # Extract feature number if branch matches pattern ###-*
-                if ($cleanBranch -match '^(\d+)-') {
+                # Extract feature number only for standard three-digit feature branches ###-*
+                if ($cleanBranch -match '^(\d{3})-') {
                     $num = [int]$matches[1]
                     if ($num -gt $highest) { $highest = $num }
                 }
@@ -242,35 +255,63 @@ if ($branchName.Length -gt $maxBranchLength) {
     $originalBranchName = $branchName
     $branchName = "$featureNum-$truncatedSuffix"
     
-    Write-Warning "[specify] Branch name exceeded GitHub's 244-byte limit"
-    Write-Warning "[specify] Original: $originalBranchName ($($originalBranchName.Length) bytes)"
-    Write-Warning "[specify] Truncated to: $branchName ($($branchName.Length) bytes)"
+    if (-not $Json) {
+        Write-Warning "[specify] Branch name exceeded GitHub's 244-byte limit"
+        Write-Warning "[specify] Original: $originalBranchName ($($originalBranchName.Length) bytes)"
+        Write-Warning "[specify] Truncated to: $branchName ($($branchName.Length) bytes)"
+    }
 }
 
 if ($hasGit) {
-    $branchCreated = $false
+    $branchReady = $false
+    $action = 'created'
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     try {
-        git checkout -b $branchName 2>$null | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            $branchCreated = $true
-        }
-    } catch {
-        # Exception during git command
+        $null = git checkout -b $branchName 2>$null
+        $createExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousEap
+    }
+    if ($createExitCode -eq 0) {
+        $branchReady = $true
+        $action = 'created'
     }
 
-    if (-not $branchCreated) {
+    if (-not $branchReady) {
         # Check if branch already exists
         $existingBranch = git branch --list $branchName 2>$null
         if ($existingBranch) {
-            Write-Error "Error: Branch '$branchName' already exists. Please use a different feature name or specify a different number with -Number."
-            exit 1
+            $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
+            if ($currentBranch -eq $branchName) {
+                $branchReady = $true
+                $action = 'recovered-current'
+            } else {
+                $previousEap = $ErrorActionPreference
+                $ErrorActionPreference = 'Continue'
+                try {
+                    $null = git checkout $branchName 2>$null
+                    $checkoutExitCode = $LASTEXITCODE
+                } finally {
+                    $ErrorActionPreference = $previousEap
+                }
+                if ($checkoutExitCode -eq 0) {
+                    $branchReady = $true
+                    $action = 'recovered-checkout'
+                } else {
+                    Write-Error "Error: Branch '$branchName' exists but checkout failed. Please checkout manually and retry."
+                    exit 1
+                }
+            }
         } else {
             Write-Error "Error: Failed to create git branch '$branchName'. Please check your git configuration and try again."
             exit 1
         }
     }
 } else {
-    Write-Warning "[specify] Warning: Git repository not detected; skipped branch creation for $branchName"
+    if (-not $Json) {
+        Write-Warning "[specify] Warning: Git repository not detected; skipped branch creation for $branchName"
+    }
 }
 
 $featureDir = Join-Path $specsDir $branchName
@@ -278,10 +319,17 @@ New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
 
 $template = Join-Path $repoRoot '.specify/templates/spec-template.md'
 $specFile = Join-Path $featureDir 'spec.md'
-if (Test-Path $template) { 
-    Copy-Item $template $specFile -Force 
-} else { 
-    New-Item -ItemType File -Path $specFile | Out-Null 
+$specExisted = Test-Path $specFile
+if (-not $specExisted) {
+    if (Test-Path $template) { 
+        Copy-Item $template $specFile -Force 
+    } else { 
+        New-Item -ItemType File -Path $specFile | Out-Null 
+    }
+} else {
+    if ($action -eq 'created') {
+        $action = 'preserved'
+    }
 }
 
 # Set the SPECIFY_FEATURE environment variable for the current session
@@ -296,6 +344,7 @@ if ($Json) {
     }
     $obj | ConvertTo-Json -Compress
 } else {
+    Write-Output "ACTION: $action"
     Write-Output "BRANCH_NAME: $branchName"
     Write-Output "SPEC_FILE: $specFile"
     Write-Output "FEATURE_NUM: $featureNum"

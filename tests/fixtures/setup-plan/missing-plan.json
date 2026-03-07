@@ -1,0 +1,6 @@
+{
+  "description": "Fixture metadata for missing plan.md scenario",
+  "expectedAction": "created",
+  "branchPattern": "^\\d{3}-[a-z0-9-]+$",
+  "createdAt": "2026-03-06"
+}
