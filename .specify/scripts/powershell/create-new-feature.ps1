@@ -13,6 +13,29 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+function Exit-WithFailure {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message,
+        [string]$Hint = $null
+    )
+
+    if ($Json) {
+        [PSCustomObject][ordered]@{
+            STATUS = 'ERROR'
+            ERROR  = $Message
+            HINT   = $Hint
+        } | ConvertTo-Json -Compress
+    } else {
+        Write-Output "ERROR: $Message"
+        if (-not [string]::IsNullOrWhiteSpace($Hint)) {
+            Write-Output "HINT: $Hint"
+        }
+    }
+
+    exit 1
+}
+
 # Show help if requested
 if ($Help) {
     Write-Host "Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] [-Number N] <feature description>"
@@ -42,16 +65,14 @@ if ($FeatureDescription -and $FeatureDescription.Count -gt 0) {
 
 # Check if feature description provided
 if (-not $descriptionParts -or $descriptionParts.Count -eq 0) {
-    Write-Error "Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] <feature description>"
-    exit 1
+    Exit-WithFailure -Message 'Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] <feature description>' -Hint 'Run with -Help to see usage examples.'
 }
 
 $featureDesc = ($descriptionParts -join ' ').Trim()
 
 # Validate description is not empty after trimming (e.g., user passed only whitespace)
 if ([string]::IsNullOrWhiteSpace($featureDesc)) {
-    Write-Error "Error: Feature description cannot be empty or contain only whitespace"
-    exit 1
+    Exit-WithFailure -Message 'Error: Feature description cannot be empty or contain only whitespace' -Hint 'Provide a non-empty feature description.'
 }
 
 # Resolve repository root. Prefer git information when available, but fall back
@@ -150,8 +171,7 @@ function ConvertTo-CleanBranchName {
 }
 $fallbackRoot = (Find-RepositoryRoot -StartDir $PSScriptRoot)
 if (-not $fallbackRoot) {
-    Write-Error "Error: Could not determine repository root. Please run this script from within the repository."
-    exit 1
+    Exit-WithFailure -Message 'Error: Could not determine repository root. Please run this script from within the repository.' -Hint 'Run the command from inside a repository containing .git or .specify.'
 }
 
 try {
@@ -299,13 +319,11 @@ if ($hasGit) {
                     $branchReady = $true
                     $action = 'recovered-checkout'
                 } else {
-                    Write-Error "Error: Branch '$branchName' exists but checkout failed. Please checkout manually and retry."
-                    exit 1
+                    Exit-WithFailure -Message "Error: Branch '$branchName' exists but checkout failed." -Hint 'Please checkout manually and retry.'
                 }
             }
         } else {
-            Write-Error "Error: Failed to create git branch '$branchName'. Please check your git configuration and try again."
-            exit 1
+            Exit-WithFailure -Message "Error: Failed to create git branch '$branchName'." -Hint 'Please check your git configuration and try again.'
         }
     }
 } else {

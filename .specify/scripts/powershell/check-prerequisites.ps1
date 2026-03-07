@@ -33,8 +33,16 @@ function Fail-Check {
         [string]$Hint
     )
 
-    Write-Error $Message
-    Write-Error $Hint
+    if ($Json) {
+        [PSCustomObject][ordered]@{
+            STATUS = 'ERROR'
+            ERROR  = $Message
+            HINT   = $Hint
+        } | ConvertTo-Json -Compress
+    } else {
+        Write-Output $Message
+        Write-Output "HINT: $Hint"
+    }
     exit 1
 }
 
@@ -94,8 +102,12 @@ if ($PathsOnly) {
     exit 0
 }
 
-if (-not (Test-FeatureBranch -Branch $paths.CURRENT_BRANCH -HasGit:$paths.HAS_GIT)) { 
-    exit 1 
+if ($paths.HAS_GIT -and $paths.CURRENT_BRANCH -notmatch '^[0-9]{3}-') {
+    Fail-Check -Message "ERROR: Not on a feature branch. Current branch: $($paths.CURRENT_BRANCH)" -Hint 'Feature branches should be named like: 001-feature-name'
+}
+
+if (-not $paths.HAS_GIT -and -not $Json) {
+    Write-Warning '[specify] Warning: Git repository not detected; skipped branch validation'
 }
 
 # Validate required directories and files

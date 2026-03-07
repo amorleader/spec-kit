@@ -26,8 +26,22 @@ if ($Help) {
 $paths = Get-FeaturePathsEnv
 
 # Check if we're on a proper feature branch (only for git repos)
-if (-not (Test-FeatureBranch -Branch $paths.CURRENT_BRANCH -HasGit $paths.HAS_GIT)) { 
-    exit 1 
+if ($paths.HAS_GIT -and $paths.CURRENT_BRANCH -notmatch '^[0-9]{3}-') {
+    if ($Json) {
+        [PSCustomObject][ordered]@{
+            STATUS = 'ERROR'
+            ERROR  = "Not on a feature branch. Current branch: $($paths.CURRENT_BRANCH)"
+            HINT   = 'Feature branches should be named like: 001-feature-name'
+        } | ConvertTo-Json -Compress
+    } else {
+        Write-Output "ERROR: Not on a feature branch. Current branch: $($paths.CURRENT_BRANCH)"
+        Write-Output 'HINT: Feature branches should be named like: 001-feature-name'
+    }
+    exit 1
+}
+
+if (-not $paths.HAS_GIT -and -not $Json) {
+    Write-Warning '[specify] Warning: Git repository not detected; skipped branch validation'
 }
 
 # Ensure the feature directory exists
