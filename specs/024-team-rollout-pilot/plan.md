@@ -42,7 +42,9 @@ Validate team adoption readiness with one real teammate docs-only run and remove
 - `specs/024-team-rollout-pilot/spec.md`
 - `specs/024-team-rollout-pilot/plan.md`
 - `specs/024-team-rollout-pilot/tasks.md`
+- `specs/024-team-rollout-pilot/teammate-run-packet.md`
 - `specs/024-team-rollout-pilot/teammate-run-log-template.md`
+- `specs/024-team-rollout-pilot/pilot-success-metrics.md`
 - `specs/024-team-rollout-pilot/troubleshooting-appendix.md`
 - `specs/024-team-rollout-pilot/pilot-result-report.md`
 

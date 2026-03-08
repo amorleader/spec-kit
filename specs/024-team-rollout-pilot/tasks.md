@@ -2,9 +2,9 @@
 
 ## Phase 1 - Pilot Preparation
 
-- [ ] P001 Prepare teammate run packet (docs entrypoint + command pack links).
-- [ ] P002 Create structured teammate run log template.
-- [ ] P003 Define success metrics and pass/fail thresholds for pilot run.
+- [x] P001 Prepare teammate run packet (docs entrypoint + command pack links).
+- [x] P002 Create structured teammate run log template.
+- [x] P003 Define success metrics and pass/fail thresholds for pilot run.
 
 ## Phase 2 - Real Teammate Pilot
 
