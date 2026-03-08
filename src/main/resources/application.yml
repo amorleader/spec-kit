@@ -9,3 +9,5 @@ app:
   build-planner:
     max-results-min: 1
     max-results-max: 20
+  expense:
+    repository-mode: in-memory

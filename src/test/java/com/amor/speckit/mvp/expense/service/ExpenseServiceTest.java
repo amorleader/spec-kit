@@ -3,7 +3,7 @@ package com.amor.speckit.mvp.expense.service;
 import com.amor.speckit.mvp.expense.domain.ExpenseCategory;
 import com.amor.speckit.mvp.expense.dto.CategorySummaryResponse;
 import com.amor.speckit.mvp.expense.dto.CreateExpenseTransactionRequest;
-import com.amor.speckit.mvp.expense.repository.ExpenseTransactionRepository;
+import com.amor.speckit.mvp.expense.repository.InMemoryExpenseTransactionRepository;
 import com.amor.speckit.mvp.mhr.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ExpenseServiceTest {
 
-    private final ExpenseService expenseService = new ExpenseService(new ExpenseTransactionRepository());
+    private final ExpenseService expenseService = new ExpenseService(new InMemoryExpenseTransactionRepository());
 
     @Test
     void shouldAggregateByCategory() {

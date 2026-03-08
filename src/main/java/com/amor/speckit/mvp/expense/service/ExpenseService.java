@@ -6,7 +6,7 @@ import com.amor.speckit.mvp.expense.dto.CategoryResponse;
 import com.amor.speckit.mvp.expense.dto.CategorySummaryResponse;
 import com.amor.speckit.mvp.expense.dto.CreateExpenseTransactionRequest;
 import com.amor.speckit.mvp.expense.dto.ExpenseTransactionResponse;
-import com.amor.speckit.mvp.expense.repository.ExpenseTransactionRepository;
+import com.amor.speckit.mvp.expense.repository.ExpenseTransactionPort;
 import com.amor.speckit.mvp.mhr.dto.ErrorDetail;
 import com.amor.speckit.mvp.mhr.exception.ValidationException;
 import org.springframework.stereotype.Service;
@@ -20,9 +20,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class ExpenseService {
-    private final ExpenseTransactionRepository expenseTransactionRepository;
+    private final ExpenseTransactionPort expenseTransactionRepository;
 
-    public ExpenseService(ExpenseTransactionRepository expenseTransactionRepository) {
+    public ExpenseService(ExpenseTransactionPort expenseTransactionRepository) {
         this.expenseTransactionRepository = expenseTransactionRepository;
     }
 

@@ -50,14 +50,14 @@ Checklist:
 
 1. Confirm jar process is running.
 2. Confirm port 8080 is free and app bound successfully.
-3. Verify profile and DB env vars are set before startup.
+3. Confirm app logs include `Started` before running smoke checks.
 4. Retry smoke checks after startup logs show `Started`.
 
-## 5. Credential handling
+## 5. Session hygiene
 
 Rule:
-- Never commit credentials in files.
-- Set DB values via environment variables per session.
+- Do not modify scripts/docs during the pilot session.
+- Record all command deviations in run log with reason.
 
 ## 6. Teammate unavailable fallback
 

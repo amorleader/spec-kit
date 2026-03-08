@@ -6,7 +6,7 @@
 
 ## Goal
 
-Validate team adoption readiness with one real teammate docs-only run (or solo-proxy fallback when teammate is unavailable) and remove the largest technical limitation by adding a DB-backed reference implementation for expense flow.
+Validate team adoption readiness with one real teammate docs-only run (or solo-proxy fallback when teammate is unavailable) and lock a repeatable MHR validation path for rollout.
 
 ## Workflow Architecture
 
@@ -23,19 +23,19 @@ Validate team adoption readiness with one real teammate docs-only run (or solo-p
 - Convert encountered blockers into deterministic fix recipes.
 - Append recipes to shared troubleshooting appendix.
 
-4. DB-Backed Reference
-- Replace expense in-memory repository with DB-backed implementation path.
-- Keep DTO and API contracts unchanged.
+4. MHR Validation Reference
+- Confirm stable MHR contract checks for catalog/build endpoints.
+- Keep MHR DTO and API contracts unchanged.
 
 5. Verification and Recommendation
-- Run tests/package/smoke with DB-backed mode.
+- Run tests/package/smoke with MHR mode.
 - Publish rollout recommendation and next actions.
 
 ## Technical Decisions
 
-- Keep stack baseline: Java 11 target, Spring Boot 2.7.x, Maven, PostgreSQL.
+- Keep stack baseline: Java 11 target, Spring Boot 2.7.x, Maven.
 - Keep existing endpoint contracts unchanged.
-- Prefer simple JDBC/JPA path with clear repository boundary.
+- Prefer explicit smoke and contract checks over ad-hoc manual validation.
 - Preserve script-first teammate operation for pilot repeatability.
 
 ## Deliverables
@@ -59,7 +59,7 @@ Validate team adoption readiness with one real teammate docs-only run (or solo-p
   - One non-author teammate run completed with structured evidence, or one solo-proxy run completed with explicit fallback note.
 
 - Gate 3: Engineering gate
-  - DB-backed implementation passes test and package commands.
+  - MHR validation path passes test, package, and smoke commands.
 
 - Gate 4: Rollout decision gate
   - Final recommendation and prioritized backlog are documented.
@@ -68,5 +68,5 @@ Validate team adoption readiness with one real teammate docs-only run (or solo-p
 
 1. Execute one teammate pilot run.
 2. Resolve blockers into docs/scripts.
-3. Validate DB-backed reference path.
+3. Validate MHR reference path.
 4. Decide go/no-go for broader team rollout.

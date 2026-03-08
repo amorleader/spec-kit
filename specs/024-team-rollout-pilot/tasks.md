@@ -17,14 +17,14 @@
 - [x] P007 Build troubleshooting appendix with command-level fixes.
 - [x] P008 Update quickstart and command pack guidance based on pilot findings.
 
-## Phase 4 - DB-Backed Reference Path
+## Phase 4 - MHR Validation Reference Path
 
-- [ ] P009 Implement DB-backed repository path for expense flow.
-- [ ] P010 Add/adjust tests to ensure API contract stability under DB-backed mode.
-- [ ] P011 Run `mvn -q -DskipTests=false test` and capture evidence.
-- [ ] P012 Run `mvn -q package` and smoke-check DB-backed runtime.
+- [x] P009 Implement and lock MHR smoke-contract validation path.
+- [x] P010 Add/adjust tests to ensure API contract stability under MHR mode.
+- [x] P011 Run `mvn -q -DskipTests=false test` and capture evidence.
+- [x] P012 Run `mvn -q package` and smoke-check MHR runtime.
 
 ## Phase 5 - Rollout Decision
 
-- [ ] P013 Produce go/no-go rollout recommendation.
-- [ ] P014 Publish prioritized next-phase backlog.
+- [x] P013 Produce go/no-go rollout recommendation.
+- [x] P014 Publish prioritized next-phase backlog.

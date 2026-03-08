@@ -16,13 +16,13 @@
 |---|---|---:|---|---|
 | Preflight | `01_preflight.ps1` | 0.24s | Pass | Java/Maven resolved via explicit paths |
 | Build/Test+Package | `02_build_and_package.ps1` | 6.43s | Pass | `mvn test` and `mvn package` completed |
-| Smoke Checks | `03_smoke_check.ps1 -Mode expense` | 0.24s | Pass | endpoint and boundary validation checks passed |
+| Smoke Checks | `03_smoke_check.ps1 -Mode mhr` | 0.24s | Pass | catalog/build endpoint smoke checks passed |
 
 ## Evidence
 
 - Test reports:
-  - `target/surefire-reports/TEST-com.amor.speckit.mvp.expense.controller.ExpenseControllerTest.xml`
-  - `target/surefire-reports/TEST-com.amor.speckit.mvp.expense.service.ExpenseServiceTest.xml`
+  - `target/surefire-reports/TEST-com.amor.speckit.mvp.mhr.controller.BuildControllerTest.xml`
+  - `target/surefire-reports/TEST-com.amor.speckit.mvp.mhr.service.BuildGenerationServiceTest.xml`
 - Build artifact:
   - `target/mhr-build-planner-0.0.1-SNAPSHOT.jar`
 - Total elapsed time:

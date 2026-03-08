@@ -23,8 +23,8 @@
 - Threshold: PASS if all 3 scripts execute successfully.
 
 6. Contract confidence
-- Definition: boundary validation contract check matches documented JSON contract.
-- Threshold: PASS if endpoint boundary check matches `code/message/details` format.
+- Definition: MHR build/catalog contract check matches documented API behavior.
+- Threshold: PASS if MHR smoke checks return expected success payloads and status codes.
 
 ## Pilot Decision Rule
 

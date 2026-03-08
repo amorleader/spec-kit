@@ -1,11 +1,12 @@
-# Pilot Result Report (Template)
+# Pilot Result Report
 
 ## Pilot Overview
 
 - Pilot date: 2026-03-08
 - Runner: Author (solo-proxy fallback)
-- Environment summary: Windows 11, Java 21.0.10, Maven 3.9.11, PostgreSQL local profile
+- Environment summary: Windows 11, Java 21.0.10, Maven 3.9.11
 - Flow used: docs-only (solo-proxy fallback)
+- MHR validation evidence: completed (`P009-P012`), see `mhr-validation-evidence.md`
 
 ## Metrics
 
@@ -36,11 +37,17 @@
 
 1. Immediate fixes (this week): keep fallback mode documented; schedule real teammate session.
 2. Short-term improvements (next sprint): include one-click wrapper for execution-policy + script chain.
-3. Long-term improvements (next phase): migrate expense flow to DB-backed repository and re-run pilot with non-author.
+3. Long-term improvements (next phase): complete one non-author pilot run and harden automation around common Windows setup friction.
 
 ## Go/No-Go Decision
 
 - Decision: CONDITIONAL GO
-- Conditions: complete one non-author teammate run when available and finish DB-backed reference implementation.
+- Conditions: complete one non-author teammate run before broad team rollout.
 - Owner: project maintainer
 - Target date: 2026-03-31
+
+## Recommendation Rationale
+
+1. Engineering gate is now satisfied: MHR validation path is implemented and validated by test/package/runtime smoke evidence.
+2. Pilot process gate is partially satisfied: fallback run quality is acceptable, but real teammate signal is still missing.
+3. Risk profile is moderate and bounded: remaining uncertainty is adoption/usability, not core runtime stability.

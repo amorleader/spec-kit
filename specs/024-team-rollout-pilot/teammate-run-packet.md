@@ -27,13 +27,13 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 pwsh ./scripts/team-pilot/01_preflight.ps1
 pwsh ./scripts/team-pilot/02_build_and_package.ps1
 # Start application jar in a new terminal
-pwsh ./scripts/team-pilot/03_smoke_check.ps1 -Mode expense -BaseUrl http://localhost:8080
+pwsh ./scripts/team-pilot/03_smoke_check.ps1 -Mode mhr -BaseUrl http://localhost:8080
 ```
 
 ## Environment Notes
 
 - If Java/Maven commands fail, use fixes in troubleshooting appendix.
-- Set DB credentials via environment variables only (do not edit repo files with secrets).
+- Keep commands and scripts unchanged during pilot session to preserve evidence quality.
 
 ## Required Evidence
 
