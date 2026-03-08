@@ -12,8 +12,9 @@ app:
     generate-timeout-seconds: 30
   mhr:
     catalog:
-      repository-mode: in-memory
+      repository-mode: embedded-json
       import-on-startup: false
       import-json-path: ""
+      embedded-json-path: "catalog/mhr-catalog.json"
   expense:
     repository-mode: in-memory
