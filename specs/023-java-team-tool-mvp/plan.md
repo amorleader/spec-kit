@@ -68,6 +68,10 @@ Deliver a personal-first, team-ready MVP workflow that can take Java business re
 - `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/spec.md`
 - `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/plan.md`
 - `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/tasks.md`
+- `specs/023-java-team-tool-mvp/demo-b-expense-tracker/request.md`
+- `specs/023-java-team-tool-mvp/demo-b-expense-tracker/spec.md`
+- `specs/023-java-team-tool-mvp/demo-b-expense-tracker/plan.md`
+- `specs/023-java-team-tool-mvp/demo-b-expense-tracker/tasks.md`
 
 ## Quality Gates
 
