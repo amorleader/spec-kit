@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${MHR_DB_HOST:localhost}:${MHR_DB_PORT:5432}/${MHR_DB_NAME:speckit_mhr}
-    username: ${MHR_DB_USER:mhr_user}
-    password: ${MHR_DB_PASSWORD:}
+    url: jdbc:postgresql://localhost:5432/speckit_mhr
+    username: mhr_user
+    password: t!uL^rSxYETsXmiaa&yW
     driver-class-name: org.postgresql.Driver
 
 app:

@@ -46,6 +46,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
+    @ExceptionHandler(BuildGenerationTimeoutException.class)
+    public ResponseEntity<ApiError> handleBuildGenerationTimeout(BuildGenerationTimeoutException ex) {
+        ApiError body = new ApiError(
+                "REQUEST_TIMEOUT",
+                ex.getMessage(),
+                List.of(
+                        new ErrorDetail("timeoutSeconds", String.valueOf(ex.getTimeoutSeconds())),
+                        new ErrorDetail("checkedCombinations", String.valueOf(ex.getCheckedCombinations())),
+                        new ErrorDetail("matchedCandidates", String.valueOf(ex.getMatchedCandidates())),
+                        new ErrorDetail("reason", "generation_timeout")
+                )
+        );
+        return ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT).body(body);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnknown(Exception ex) {
         ApiError body = new ApiError("INTERNAL_ERROR", "Unexpected server error", List.of());

@@ -75,7 +75,8 @@
     const zhReason = {
         out_of_range: '超出允许范围',
         unknown_skill: '未知技能代码',
-        exceeds_skill_max: '超过技能最大等级'
+        exceeds_skill_max: '超过技能最大等级',
+        generation_timeout: '生成超时（超过 30 秒）'
     };
 
     function zWeapon(code) {
@@ -216,12 +217,17 @@
             maxResults: Number(document.getElementById('maxResults').value)
         };
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
         try {
             const res = await fetch('/api/v1/builds/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             const json = await res.json();
 
             if (!res.ok) {
@@ -231,6 +237,11 @@
 
             resultBox.textContent = renderResult(json, payload);
         } catch (e) {
+            clearTimeout(timeoutId);
+            if (e && e.name === 'AbortError') {
+                resultBox.textContent = '请求超时：生成配装超过 30 秒，已自动取消。请缩小技能条件或结果数量后重试。';
+                return;
+            }
             resultBox.textContent = '请求失败：' + e.message;
         }
     });

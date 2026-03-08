@@ -9,6 +9,7 @@ app:
   build-planner:
     max-results-min: 1
     max-results-max: 20
+    generate-timeout-seconds: 30
   mhr:
     catalog:
       repository-mode: in-memory

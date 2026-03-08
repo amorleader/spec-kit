@@ -6,6 +6,7 @@ import com.amor.speckit.mvp.mhr.dto.BuildGenerateRequest;
 import com.amor.speckit.mvp.mhr.dto.BuildGenerateResponse;
 import com.amor.speckit.mvp.mhr.dto.BuildResultResponse;
 import com.amor.speckit.mvp.mhr.dto.TargetSkillRequest;
+import com.amor.speckit.mvp.mhr.exception.BuildGenerationTimeoutException;
 import com.amor.speckit.mvp.mhr.repository.EquipmentCatalogRepository;
 import com.amor.speckit.mvp.mhr.repository.SkillCatalogRepository;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BuildGenerationServiceTest {
@@ -52,6 +54,18 @@ class BuildGenerationServiceTest {
             assertTrue(result.getTotalSkills().getOrDefault("ATTACK_BOOST", 0) >= 4);
             assertTrue(result.getTotalSkills().getOrDefault("WEAKNESS_EXPLOIT", 0) >= 3);
         }
+    }
+
+    @Test
+    void shouldThrowTimeoutWhenGenerationExceedsDeadline() {
+        BuildGenerateRequest request = new BuildGenerateRequest();
+        request.setWeaponType(WeaponType.LONG_SWORD);
+        request.setTargetSkills(Arrays.asList(skill("ATTACK_BOOST", 4), skill("WEAKNESS_EXPLOIT", 3)));
+        request.setMaxResults(5);
+
+        service.setGenerateTimeoutSeconds(0);
+
+        assertThrows(BuildGenerationTimeoutException.class, () -> service.generate(request));
     }
 
     private TargetSkillRequest skill(String code, int minLevel) {
