@@ -64,6 +64,12 @@ Deliver a personal-first, team-ready MVP workflow that can take Java business re
 - `specs/023-java-team-tool-mvp/tasks-template-constraints.md`
 - `specs/023-java-team-tool-mvp/quickstart.md`
 - `specs/023-java-team-tool-mvp/contracts/mvp-gate-checklist.md`
+- `specs/023-java-team-tool-mvp/team-dry-run-simulation.md`
+- `specs/023-java-team-tool-mvp/mvp-summary-roadmap.md`
+- `scripts/team-pilot/README.md`
+- `scripts/team-pilot/01_preflight.ps1`
+- `scripts/team-pilot/02_build_and_package.ps1`
+- `scripts/team-pilot/03_smoke_check.ps1`
 - `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/request.md`
 - `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/spec.md`
 - `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/plan.md`

@@ -33,8 +33,8 @@
 
 ## Phase 5 - Team Pilot Packaging
 
-- [ ] T020 Write quickstart for teammates (input format, command flow, outputs)
-- [ ] T021 Write MVP gate checklist for acceptance and release readiness
-- [ ] T022 Package reusable scripts/commands for internal usage
-- [ ] T023 Run one teammate dry-run simulation using docs only
-- [ ] T024 Publish MVP summary and next-phase roadmap
+- [x] T020 Write quickstart for teammates (input format, command flow, outputs)
+- [x] T021 Write MVP gate checklist for acceptance and release readiness
+- [x] T022 Package reusable scripts/commands for internal usage
+- [x] T023 Run one teammate dry-run simulation using docs only
+- [x] T024 Publish MVP summary and next-phase roadmap

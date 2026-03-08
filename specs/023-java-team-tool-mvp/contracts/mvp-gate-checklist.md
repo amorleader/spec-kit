@@ -23,10 +23,10 @@
 
 ## Runtime Smoke Gate
 
-- [ ] `GET /api/v1/skills` passes
-- [ ] `POST /api/v1/builds/generate` returns expected data
-- [ ] Boundary validation request returns expected contract
-- [ ] Root page `/` responds HTTP 200
+- [ ] Core list/read endpoint passes (feature-specific)
+- [ ] Core command/write endpoint passes (feature-specific)
+- [ ] Boundary validation request returns expected JSON contract
+- [ ] Feature UI route responds HTTP 200
 
 ## Reproducibility Gate
 

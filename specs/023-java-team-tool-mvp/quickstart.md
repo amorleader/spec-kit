@@ -10,6 +10,11 @@ Use this minimum input:
 - Required outputs
 - Constraints (security, performance, delivery date)
 
+Preferred source template:
+
+- `specs/023-java-team-tool-mvp/requirement-input-template.md`
+- Save each run under `specs/023-java-team-tool-mvp/demo-<id>-<name>/request.md`
+
 ## 2) Generate design artifacts
 
 Produce and review in order:
@@ -65,6 +70,22 @@ Validate:
 - Acceptance summary
 - Known limitations
 - Follow-up backlog
+
+## 6) Team command pack (recommended)
+
+Use reusable scripts under `scripts/team-pilot/`:
+
+```powershell
+pwsh ./scripts/team-pilot/01_preflight.ps1
+pwsh ./scripts/team-pilot/02_build_and_package.ps1
+pwsh ./scripts/team-pilot/03_smoke_check.ps1 -Mode expense -BaseUrl http://localhost:8080
+```
+
+Expected outputs:
+
+- test reports in `target/surefire-reports/`
+- jar in `target/*.jar`
+- smoke result `OK`
 
 Runtime configuration rule:
 
