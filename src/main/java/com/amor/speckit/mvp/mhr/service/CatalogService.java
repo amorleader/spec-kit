@@ -6,8 +6,8 @@ import com.amor.speckit.mvp.mhr.domain.Skill;
 import com.amor.speckit.mvp.mhr.domain.WeaponType;
 import com.amor.speckit.mvp.mhr.dto.EquipmentResponse;
 import com.amor.speckit.mvp.mhr.dto.SkillResponse;
-import com.amor.speckit.mvp.mhr.repository.EquipmentCatalogRepository;
-import com.amor.speckit.mvp.mhr.repository.SkillCatalogRepository;
+import com.amor.speckit.mvp.mhr.repository.EquipmentCatalogPort;
+import com.amor.speckit.mvp.mhr.repository.SkillCatalogPort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,11 +15,11 @@ import java.util.stream.Collectors;
 
 @Service
 public class CatalogService {
-    private final SkillCatalogRepository skillCatalogRepository;
-    private final EquipmentCatalogRepository equipmentCatalogRepository;
+    private final SkillCatalogPort skillCatalogRepository;
+    private final EquipmentCatalogPort equipmentCatalogRepository;
 
-    public CatalogService(SkillCatalogRepository skillCatalogRepository,
-                          EquipmentCatalogRepository equipmentCatalogRepository) {
+    public CatalogService(SkillCatalogPort skillCatalogRepository,
+                          EquipmentCatalogPort equipmentCatalogRepository) {
         this.skillCatalogRepository = skillCatalogRepository;
         this.equipmentCatalogRepository = equipmentCatalogRepository;
     }
@@ -42,6 +42,7 @@ public class CatalogService {
         EquipmentResponse response = new EquipmentResponse();
         response.setId(equipment.getId());
         response.setName(equipment.getName());
+        response.setNameZh(equipment.getNameZh());
         response.setPart(equipment.getPart());
         response.setRarity(equipment.getRarity());
         response.setSlots(equipment.getSlots());
@@ -54,6 +55,7 @@ public class CatalogService {
         response.setId(skill.getId());
         response.setCode(skill.getCode());
         response.setName(skill.getName());
+        response.setNameZh(skill.getNameZh());
         response.setMaxLevel(skill.getMaxLevel());
         return response;
     }

@@ -11,8 +11,8 @@ import com.amor.speckit.mvp.mhr.dto.EquipmentResponse;
 import com.amor.speckit.mvp.mhr.dto.ErrorDetail;
 import com.amor.speckit.mvp.mhr.dto.TargetSkillRequest;
 import com.amor.speckit.mvp.mhr.exception.ValidationException;
-import com.amor.speckit.mvp.mhr.repository.EquipmentCatalogRepository;
-import com.amor.speckit.mvp.mhr.repository.SkillCatalogRepository;
+import com.amor.speckit.mvp.mhr.repository.EquipmentCatalogPort;
+import com.amor.speckit.mvp.mhr.repository.SkillCatalogPort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -26,13 +26,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class BuildGenerationService {
-    private final EquipmentCatalogRepository equipmentCatalogRepository;
-    private final SkillCatalogRepository skillCatalogRepository;
+    private final EquipmentCatalogPort equipmentCatalogRepository;
+    private final SkillCatalogPort skillCatalogRepository;
     private final CatalogService catalogService;
     private final BuildResultStore buildResultStore;
 
-    public BuildGenerationService(EquipmentCatalogRepository equipmentCatalogRepository,
-                                  SkillCatalogRepository skillCatalogRepository,
+    public BuildGenerationService(EquipmentCatalogPort equipmentCatalogRepository,
+                                  SkillCatalogPort skillCatalogRepository,
                                   CatalogService catalogService,
                                   BuildResultStore buildResultStore) {
         this.equipmentCatalogRepository = equipmentCatalogRepository;

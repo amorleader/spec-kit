@@ -8,6 +8,7 @@ import java.util.Set;
 public class Equipment {
     private final long id;
     private final String name;
+    private final String nameZh;
     private final EquipmentPart part;
     private final int rarity;
     private final List<Integer> slots;
@@ -16,6 +17,7 @@ public class Equipment {
 
     public Equipment(long id,
                      String name,
+                     String nameZh,
                      EquipmentPart part,
                      int rarity,
                      List<Integer> slots,
@@ -23,6 +25,7 @@ public class Equipment {
                      Set<WeaponType> supportedWeaponTypes) {
         this.id = id;
         this.name = name;
+        this.nameZh = nameZh;
         this.part = part;
         this.rarity = rarity;
         this.slots = Collections.unmodifiableList(slots);
@@ -36,6 +39,10 @@ public class Equipment {
 
     public String getName() {
         return name;
+    }
+
+    public String getNameZh() {
+        return nameZh;
     }
 
     public EquipmentPart getPart() {

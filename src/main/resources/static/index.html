@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MHR Build Planner MVP</title>
+    <title>怪猎崛起配装助手 MVP</title>
     <style>
         body { font-family: "Segoe UI", sans-serif; margin: 24px; background: #f6f7fb; color: #1f2937; }
         .card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
@@ -18,40 +18,197 @@
     </style>
 </head>
 <body>
-<h1>MHR Build Planner MVP</h1>
+<h1>怪猎崛起配装助手 MVP</h1>
 <div class="layout">
     <div class="card">
-        <label for="weapon">Weapon Type</label>
+        <label for="weapon">武器类型</label>
         <select id="weapon">
-            <option value="LONG_SWORD">LONG_SWORD</option>
-            <option value="GREAT_SWORD">GREAT_SWORD</option>
-            <option value="BOW">BOW</option>
+            <option value="LONG_SWORD">太刀</option>
+            <option value="GREAT_SWORD">大剑</option>
+            <option value="BOW">弓</option>
         </select>
 
-        <label for="attackBoost">Attack Boost Min Level</label>
+        <label for="attackBoost">攻击强化最低等级</label>
         <input id="attackBoost" type="number" value="4" min="1" max="7"/>
 
-        <label for="weaknessExploit">Weakness Exploit Min Level</label>
+        <label for="weaknessExploit">弱点特效最低等级</label>
         <input id="weaknessExploit" type="number" value="3" min="1" max="3"/>
 
-        <label for="maxResults">Max Results</label>
+        <label for="maxResults">最多结果数</label>
         <input id="maxResults" type="number" value="5" min="1" max="20"/>
 
-        <button id="generateBtn" type="button">Generate Build</button>
+        <button id="generateBtn" type="button">生成配装</button>
     </div>
 
     <div class="card">
-        <h2>Result</h2>
-        <pre id="resultBox">No request yet.</pre>
+        <h2>结果</h2>
+        <pre id="resultBox">尚未请求，请先点击“生成配装”。</pre>
     </div>
 </div>
 
 <script>
     const resultBox = document.getElementById('resultBox');
 
+    const zhWeapon = {
+        LONG_SWORD: '太刀',
+        GREAT_SWORD: '大剑',
+        BOW: '弓'
+    };
+
+    const zhPart = {
+        HEAD: '头部',
+        CHEST: '胸部',
+        ARMS: '手部',
+        WAIST: '腰部',
+        LEGS: '腿部'
+    };
+
+    const zhSkill = {
+        ATTACK_BOOST: '攻击强化',
+        WEAKNESS_EXPLOIT: '弱点特效',
+        CRITICAL_EYE: '看破'
+    };
+
+    const skillNameMap = { ...zhSkill };
+    const equipmentNameMap = {};
+
+    const zhReason = {
+        out_of_range: '超出允许范围',
+        unknown_skill: '未知技能代码',
+        exceeds_skill_max: '超过技能最大等级'
+    };
+
+    function zWeapon(code) {
+        return zhWeapon[code] || code;
+    }
+
+    function zPart(code) {
+        return zhPart[code] || code;
+    }
+
+    function zSkill(code) {
+        return skillNameMap[code] || code;
+    }
+
+    function zEquipment(name) {
+        return equipmentNameMap[name] || name;
+    }
+
+    async function loadLocalizationData(weaponType) {
+        try {
+            const [skillsRes, equipmentRes] = await Promise.all([
+                fetch('/api/v1/skills'),
+                fetch(`/api/v1/equipments?weaponType=${encodeURIComponent(weaponType)}`)
+            ]);
+
+            if (skillsRes.ok) {
+                const skills = await skillsRes.json();
+                if (Array.isArray(skills)) {
+                    skills.forEach(skill => {
+                        if (skill && skill.code && skill.nameZh) {
+                            skillNameMap[skill.code] = skill.nameZh;
+                        }
+                    });
+                }
+            }
+
+            if (equipmentRes.ok) {
+                const equipments = await equipmentRes.json();
+                if (Array.isArray(equipments)) {
+                    equipments.forEach(equip => {
+                        if (equip && equip.name && equip.nameZh) {
+                            equipmentNameMap[equip.name] = equip.nameZh;
+                        }
+                    });
+                }
+            }
+        } catch (e) {
+            // Localization fetch failure should not block core build generation.
+        }
+    }
+
+    function formatSkills(skillPoints) {
+        if (!skillPoints || Object.keys(skillPoints).length === 0) {
+            return '无';
+        }
+        return Object.entries(skillPoints)
+            .map(([code, level]) => `${zSkill(code)} Lv${level}`)
+            .join('，');
+    }
+
+    function formatSlotSummary(slotSummary) {
+        if (!slotSummary || Object.keys(slotSummary).length === 0) {
+            return '无';
+        }
+        return Object.entries(slotSummary)
+            .sort((a, b) => Number(a[0]) - Number(b[0]))
+            .map(([slotLevel, count]) => `${slotLevel}级孔 x ${count}`)
+            .join('，');
+    }
+
+    function renderResult(json, requestPayload) {
+        const lines = [];
+        lines.push(`武器类型：${zWeapon(requestPayload.weaponType)}（${requestPayload.weaponType}）`);
+        lines.push(`目标技能：${requestPayload.targetSkills.map(s => `${zSkill(s.skillCode)} Lv${s.minLevel}`).join('，')}`);
+        lines.push(`结果上限：${requestPayload.maxResults}`);
+        lines.push('');
+
+        const results = json && Array.isArray(json.results) ? json.results : [];
+        if (results.length === 0) {
+            lines.push('未找到满足条件的配装结果。');
+            return lines.join('\n');
+        }
+
+        lines.push(`共找到 ${results.length} 套配装：`);
+        lines.push('');
+
+        results.forEach((r, index) => {
+            lines.push(`【方案 ${index + 1}】ID: ${r.id || 'N/A'}，评分: ${r.score}`);
+            lines.push('装备：');
+
+            const equipmentSet = r.equipmentSet || {};
+            Object.entries(equipmentSet).forEach(([part, equip]) => {
+                const displayName = equip && (equip.nameZh || equip.name)
+                    ? (equip.nameZh || zEquipment(equip.name))
+                    : '未知装备';
+                const rawName = equip && equip.name ? `（${equip.name}）` : '';
+                const rarity = equip && equip.rarity ? `，稀有度 R${equip.rarity}` : '';
+                const slots = equip && Array.isArray(equip.slots) && equip.slots.length > 0
+                    ? `，插槽 ${equip.slots.join('/')}`
+                    : '，插槽 无';
+                const skills = equip ? formatSkills(equip.skillPoints) : '无';
+
+                lines.push(`- ${zPart(part)}: ${displayName}${rawName}${rarity}${slots}`);
+                lines.push(`  技能：${skills}`);
+            });
+
+            lines.push(`总技能：${formatSkills(r.totalSkills)}`);
+            lines.push(`孔位汇总：${formatSlotSummary(r.slotSummary)}`);
+            lines.push('');
+        });
+
+        return lines.join('\n');
+    }
+
+    function renderErrorMessage(json, status) {
+        if (!json || typeof json !== 'object') {
+            return `请求失败（HTTP ${status}）。`;
+        }
+
+        const details = Array.isArray(json.details) ? json.details : [];
+        const detailText = details.length === 0
+            ? '无详细错误信息'
+            : details.map(d => `${d.field || 'unknown'}: ${zhReason[d.reason] || d.reason || '未知原因'}`).join('；');
+
+        return `请求失败（HTTP ${status}）\n错误码：${json.code || 'N/A'}\n错误信息：${json.message || 'N/A'}\n详细：${detailText}`;
+    }
+
     document.getElementById('generateBtn').addEventListener('click', async () => {
+        const weaponType = document.getElementById('weapon').value;
+        await loadLocalizationData(weaponType);
+
         const payload = {
-            weaponType: document.getElementById('weapon').value,
+            weaponType,
             targetSkills: [
                 { skillCode: 'ATTACK_BOOST', minLevel: Number(document.getElementById('attackBoost').value) },
                 { skillCode: 'WEAKNESS_EXPLOIT', minLevel: Number(document.getElementById('weaknessExploit').value) }
@@ -66,11 +223,23 @@
                 body: JSON.stringify(payload)
             });
             const json = await res.json();
-            resultBox.textContent = JSON.stringify(json, null, 2);
+
+            if (!res.ok) {
+                resultBox.textContent = renderErrorMessage(json, res.status);
+                return;
+            }
+
+            resultBox.textContent = renderResult(json, payload);
         } catch (e) {
-            resultBox.textContent = 'Request failed: ' + e.message;
+            resultBox.textContent = '请求失败：' + e.message;
         }
     });
+
+    document.getElementById('weapon').addEventListener('change', async (event) => {
+        await loadLocalizationData(event.target.value);
+    });
+
+    loadLocalizationData(document.getElementById('weapon').value);
 </script>
 </body>
 </html>

@@ -4,6 +4,7 @@ public class SkillResponse {
     private long id;
     private String code;
     private String name;
+    private String nameZh;
     private int maxLevel;
 
     public long getId() {
@@ -28,6 +29,14 @@ public class SkillResponse {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getNameZh() {
+        return nameZh;
+    }
+
+    public void setNameZh(String nameZh) {
+        this.nameZh = nameZh;
     }
 
     public int getMaxLevel() {

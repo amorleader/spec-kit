@@ -9,5 +9,10 @@ app:
   build-planner:
     max-results-min: 1
     max-results-max: 20
+  mhr:
+    catalog:
+      repository-mode: in-memory
+      import-on-startup: false
+      import-json-path: ""
   expense:
     repository-mode: in-memory

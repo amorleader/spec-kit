@@ -8,6 +8,7 @@ import java.util.Map;
 public class EquipmentResponse {
     private long id;
     private String name;
+    private String nameZh;
     private EquipmentPart part;
     private int rarity;
     private List<Integer> slots;
@@ -27,6 +28,14 @@ public class EquipmentResponse {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getNameZh() {
+        return nameZh;
+    }
+
+    public void setNameZh(String nameZh) {
+        this.nameZh = nameZh;
     }
 
     public EquipmentPart getPart() {
