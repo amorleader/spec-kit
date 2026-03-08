@@ -9,6 +9,7 @@
 
 ## Engineering Gate
 
+- [ ] Active shell preflight passed (`mvn -v`, `java -version`)
 - [ ] Build is successful
 - [ ] Tests are successful
 - [ ] No blocking defects in core flow
@@ -18,6 +19,14 @@
 - [ ] Jar is generated
 - [ ] Startup command is validated
 - [ ] Runtime configuration is documented
+- [ ] Secrets are injected via environment variables (not hardcoded)
+
+## Runtime Smoke Gate
+
+- [ ] `GET /api/v1/skills` passes
+- [ ] `POST /api/v1/builds/generate` returns expected data
+- [ ] Boundary validation request returns expected contract
+- [ ] Root page `/` responds HTTP 200
 
 ## Reproducibility Gate
 

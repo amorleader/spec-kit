@@ -40,5 +40,5 @@
 
 ## Phase 6 - Reproducibility Follow-Up
 
-- [ ] A022 Capture reproducibility notes for reuse in Demo B run.
-- [ ] A023 Propose template/checklist refinements based on Demo A drift.
+- [x] A022 Capture reproducibility notes for reuse in Demo B run.
+- [x] A023 Propose template/checklist refinements based on Demo A drift.

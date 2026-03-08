@@ -4,6 +4,7 @@
 
 - [ ] Global exception handler exists (`@RestControllerAdvice`).
 - [ ] Validation errors return clear field-level messages.
+- [ ] Boundary validation fields (for example `maxResults`) map to stable API contract (`code/message/details`).
 - [ ] Business exceptions map to explicit HTTP status codes.
 - [ ] Unexpected exceptions return sanitized error response (no stack trace leak).
 - [ ] API responses are JSON for both success and error paths.
@@ -24,6 +25,7 @@
 
 ## Build/Test Gate
 
+- [ ] Terminal preflight done in active shell (`mvn -v`, `java -version`).
 - [ ] `mvn -q -DskipTests=false test` passed.
 - [ ] `mvn -q package` passed.
 - [ ] Jar starts with local profile and key endpoint smoke check passed.

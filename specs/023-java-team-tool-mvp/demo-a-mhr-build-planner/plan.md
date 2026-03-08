@@ -62,6 +62,8 @@ Implement Demo A end-to-end using the standardized workflow artifacts, producing
 - `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/plan.md`
 - `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/tasks.md`
 - `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/acceptance-notes.md`
+- `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/reproducibility-notes.md`
+- `specs/023-java-team-tool-mvp/demo-a-mhr-build-planner/template-refinements.md`
 - Source code under `src/main/java/com/amor/speckit/mvp/mhr/**`
 - SQL baseline under `src/main/resources/db/migration` or `docs/sql`
 - Test evidence summary in demo acceptance notes

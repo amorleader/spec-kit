@@ -24,6 +24,16 @@ Do not start coding before tasks are approved.
 
 Follow tasks sequentially.
 
+Environment preflight (especially on Windows shell/task sessions):
+
+- Verify `mvn -v` and `java -version` in the same terminal context.
+- If unresolved in VS Code task terminals, set session vars explicitly:
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot'
+$env:Path=($env:JAVA_HOME + '\\bin;' + $env:Path)
+```
+
 Mandatory checks:
 
 - `mvn -q -DskipTests=false test`
@@ -40,11 +50,18 @@ java -jar target/<app-name>.jar
 Validate:
 
 - app starts
-- health endpoint responds
-- key CRUD flow works
+- `GET /api/v1/skills` responds
+- `POST /api/v1/builds/generate` returns valid results
+- boundary validation contract check passes (example: `maxResults=21`)
+- root page `/` responds with HTTP 200
 
 ## 5) Capture handoff artifacts
 
 - Acceptance summary
 - Known limitations
 - Follow-up backlog
+
+Runtime configuration rule:
+
+- Do not commit secrets.
+- Use environment variables for local DB credentials and profile-specific settings.
