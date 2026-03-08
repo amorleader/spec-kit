@@ -31,7 +31,7 @@ public class MhrCatalogDbInitializer {
 
     private void createTables() {
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS mhr_skills (id BIGINT PRIMARY KEY, code VARCHAR(64) UNIQUE NOT NULL, name VARCHAR(128) NOT NULL, name_zh VARCHAR(128) NOT NULL, max_level INT NOT NULL)");
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS mhr_skill_effects (skill_code VARCHAR(64) PRIMARY KEY, effect TEXT NOT NULL DEFAULT '', CONSTRAINT fk_mhr_skill_effects_skill FOREIGN KEY (skill_code) REFERENCES mhr_skills(code))");
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS mhr_skill_effects (skill_code VARCHAR(64) PRIMARY KEY, effect TEXT NOT NULL DEFAULT '')");
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS mhr_equipments (id BIGINT PRIMARY KEY, name VARCHAR(128) NOT NULL, name_zh VARCHAR(128) NOT NULL, part VARCHAR(32) NOT NULL, rarity INT NOT NULL, slots_csv VARCHAR(64) NOT NULL)");
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS mhr_equipment_skill_points (equipment_id BIGINT NOT NULL, skill_code VARCHAR(64) NOT NULL, points INT NOT NULL, PRIMARY KEY (equipment_id, skill_code), CONSTRAINT fk_mhr_equipment_skill_equipment FOREIGN KEY (equipment_id) REFERENCES mhr_equipments(id), CONSTRAINT fk_mhr_equipment_skill_skill FOREIGN KEY (skill_code) REFERENCES mhr_skills(code))");
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS mhr_equipment_weapon_types (equipment_id BIGINT NOT NULL, weapon_type VARCHAR(32) NOT NULL, PRIMARY KEY (equipment_id, weapon_type), CONSTRAINT fk_mhr_equipment_weapon_equipment FOREIGN KEY (equipment_id) REFERENCES mhr_equipments(id))");

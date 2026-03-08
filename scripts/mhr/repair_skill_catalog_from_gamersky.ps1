@@ -192,7 +192,7 @@ foreach ($line in $existingRows) {
 
 $sqlLines = New-Object System.Collections.Generic.List[string]
 $sqlLines.Add("BEGIN;")
-$sqlLines.Add("CREATE TABLE IF NOT EXISTS mhr_skill_effects (skill_code VARCHAR(64) PRIMARY KEY, effect TEXT NOT NULL DEFAULT '', CONSTRAINT fk_mhr_skill_effects_skill FOREIGN KEY (skill_code) REFERENCES mhr_skills(code));")
+$sqlLines.Add("CREATE TABLE IF NOT EXISTS mhr_skill_effects (skill_code VARCHAR(64) PRIMARY KEY, effect TEXT NOT NULL DEFAULT '');")
 
 foreach ($name in ($merged.Keys | Sort-Object)) {
     $s = $merged[$name]
