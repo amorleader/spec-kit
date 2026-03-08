@@ -35,3 +35,4 @@
 - [ ] New classes follow package/layer conventions.
 - [ ] Methods have single clear responsibility.
 - [ ] No obvious dead code or placeholder TODO in merged path.
+- [ ] Spring Boot test context is discoverable for all feature packages (scan root or explicit `@SpringBootTest(classes=...)`).

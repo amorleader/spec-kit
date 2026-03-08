@@ -36,5 +36,5 @@
 
 ## Phase 5 - Reproducibility Comparison Input
 
-- [ ] B019 Produce Demo A vs Demo B comparison snapshot inputs for T018.
-- [ ] B020 Propose draft template/checklist adjustment candidates for T019.
+- [x] B019 Produce Demo A vs Demo B comparison snapshot inputs for T018.
+- [x] B020 Propose draft template/checklist adjustment candidates for T019.

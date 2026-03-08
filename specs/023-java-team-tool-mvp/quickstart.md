@@ -34,6 +34,11 @@ $env:JAVA_HOME='C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot'
 $env:Path=($env:JAVA_HOME + '\\bin;' + $env:Path)
 ```
 
+Multi-feature bootstrap rule:
+
+- Keep Spring Boot component scanning at shared root `com.amor.speckit.mvp` when multiple feature packages are added.
+- If a test package is outside boot class package hierarchy, use explicit test bootstrap class (`@SpringBootTest(classes=...)`).
+
 Mandatory checks:
 
 - `mvn -q -DskipTests=false test`

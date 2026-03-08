@@ -22,6 +22,7 @@
 - Must document PostgreSQL usage assumptions.
 - Must define migration strategy (default/manual SQL for MVP).
 - Must identify external integrations and mocking approach.
+- Must define Spring Boot bootstrap and package scan strategy when multiple feature packages exist.
 
 ## Deliverable Constraints
 
