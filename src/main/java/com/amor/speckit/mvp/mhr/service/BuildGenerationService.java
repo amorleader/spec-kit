@@ -64,7 +64,7 @@ public class BuildGenerationService {
         List<Equipment> legs = equipmentCatalogRepository.findByPartAndWeapon(EquipmentPart.LEGS, request.getWeaponType());
         long fetchElapsedMs = nanosToMs(System.nanoTime() - fetchStartNanos);
         long estimatedCombinations = (long) heads.size() * chests.size() * arms.size() * waists.size() * legs.size();
-        List<List<Equipment>> partCandidates = List.of(heads, chests, arms, waists, legs);
+        List<List<Equipment>> partCandidates = buildSearchPartCandidates(heads, chests, arms, waists, legs, request.getTargetSkills());
         List<Map<String, Integer>> remainingSkillMaxByDepth = buildRemainingSkillMaxByDepth(partCandidates, request.getTargetSkills());
         List<Integer> remainingRarityMaxByDepth = buildRemainingRarityMaxByDepth(partCandidates);
         Map<String, Integer> currentSkills = new HashMap<>();
@@ -81,6 +81,8 @@ public class BuildGenerationService {
                 waists.size(),
                 legs.size(),
                 estimatedCombinations);
+            log.info("build.generate search order candidate sizes={}",
+                partCandidates.stream().map(List::size).collect(Collectors.toList()));
 
         assertNotTimedOut(deadlineNanos, 0L, 0);
 
@@ -140,10 +142,6 @@ public class BuildGenerationService {
             Optional<Skill> skill = skillCatalogRepository.findByCode(target.getSkillCode());
             if (skill.isEmpty()) {
                 details.add(new ErrorDetail("targetSkills.skillCode", "unknown_skill"));
-                continue;
-            }
-            if (target.getMinLevel() > skill.get().getMaxLevel()) {
-                details.add(new ErrorDetail("targetSkills.minLevel", "exceeds_skill_max"));
             }
         }
 
@@ -373,6 +371,43 @@ public class BuildGenerationService {
             optimisticTargetScore += optimisticSkill * 10;
         }
         return optimisticTargetScore + remainingRarityMaxAtDepth;
+    }
+
+    private List<List<Equipment>> buildSearchPartCandidates(List<Equipment> heads,
+                                                            List<Equipment> chests,
+                                                            List<Equipment> arms,
+                                                            List<Equipment> waists,
+                                                            List<Equipment> legs,
+                                                            List<TargetSkillRequest> targets) {
+        List<List<Equipment>> parts = new ArrayList<>();
+        parts.add(sortPartCandidatesByHeuristic(heads, targets));
+        parts.add(sortPartCandidatesByHeuristic(chests, targets));
+        parts.add(sortPartCandidatesByHeuristic(arms, targets));
+        parts.add(sortPartCandidatesByHeuristic(waists, targets));
+        parts.add(sortPartCandidatesByHeuristic(legs, targets));
+
+        // Explore narrower parts first so pruning happens with fewer active branches.
+        parts.sort(Comparator.comparingInt(List::size));
+        return parts;
+    }
+
+    private List<Equipment> sortPartCandidatesByHeuristic(List<Equipment> candidates,
+                                                          List<TargetSkillRequest> targets) {
+        List<Equipment> sorted = new ArrayList<>(candidates);
+        sorted.sort(Comparator
+                .comparingInt((Equipment e) -> heuristicScore(e, targets))
+                .reversed()
+                .thenComparingInt(Equipment::getRarity)
+                .reversed());
+        return sorted;
+    }
+
+    private int heuristicScore(Equipment equipment, List<TargetSkillRequest> targets) {
+        int score = equipment.getRarity();
+        for (TargetSkillRequest target : targets) {
+            score += equipment.getSkillPoints().getOrDefault(target.getSkillCode(), 0) * 10;
+        }
+        return score;
     }
 
     private static class SearchMetrics {

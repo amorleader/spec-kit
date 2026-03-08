@@ -57,6 +57,7 @@ public class CatalogService {
         response.setName(skill.getName());
         response.setNameZh(skill.getNameZh());
         response.setMaxLevel(skill.getMaxLevel());
+        response.setEffect(skill.getEffect());
         return response;
     }
 }

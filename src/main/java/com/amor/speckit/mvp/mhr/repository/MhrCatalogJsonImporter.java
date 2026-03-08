@@ -68,13 +68,18 @@ public class MhrCatalogJsonImporter {
         for (SkillImport skill : skills) {
             jdbcTemplate.update(
                     "INSERT INTO mhr_skills (id, code, name, name_zh, max_level) VALUES (?, ?, ?, ?, ?) " +
-                            "ON CONFLICT (id) DO UPDATE SET code = EXCLUDED.code, name = EXCLUDED.name, name_zh = EXCLUDED.name_zh, max_level = EXCLUDED.max_level",
+                        "ON CONFLICT (id) DO UPDATE SET code = EXCLUDED.code, name = EXCLUDED.name, name_zh = EXCLUDED.name_zh, max_level = EXCLUDED.max_level",
                     skill.id,
                     safe(skill.code),
                     safe(skill.name),
                     safe(skill.nameZh),
                     skill.maxLevel
             );
+                jdbcTemplate.update(
+                    "INSERT INTO mhr_skill_effects (skill_code, effect) VALUES (?, ?) ON CONFLICT (skill_code) DO UPDATE SET effect = EXCLUDED.effect",
+                    safe(skill.code),
+                    safe(skill.effect)
+                );
         }
     }
 
@@ -137,6 +142,7 @@ public class MhrCatalogJsonImporter {
         public String name;
         public String nameZh;
         public int maxLevel;
+        public String effect;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

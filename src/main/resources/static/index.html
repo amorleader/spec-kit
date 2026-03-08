@@ -40,10 +40,11 @@
         <div class="skill-toolbar">
             <input id="skillSearch" type="text" placeholder="输入技能名/拼音/代码，例如：攻击 看破 ATTACK"/>
             <select id="skillSelect" size="6"></select>
+            <input id="selectedSkillPreview" type="text" placeholder="目标技能" readonly/>
             <input id="selectedSkillMinLevel" type="number" value="1" min="1" max="7"/>
             <button id="addSkillBtn" type="button">添加目标技能</button>
         </div>
-        <div class="hint">先搜索并选中技能，再点击“添加目标技能”。</div>
+        <div class="hint">点击下拉项后会回显到“目标技能”，再点击“添加目标技能”。</div>
         <div id="selectedSkills" class="selected-skills"></div>
 
         <label for="maxResults">最多结果数</label>
@@ -61,6 +62,7 @@
 <script>
     const resultBox = document.getElementById('resultBox');
     const skillSelect = document.getElementById('skillSelect');
+    const selectedSkillPreview = document.getElementById('selectedSkillPreview');
     const selectedSkillsBox = document.getElementById('selectedSkills');
 
     const zhWeapon = {
@@ -126,9 +128,40 @@
         return allSkills.find(s => s && s.code === skillCode);
     }
 
+    function normalizeSkillName(skill) {
+        return normalizeText((skill && (skill.nameZh || skill.name || skill.code)) || '');
+    }
+
+    function dedupeSkillsByName(skills) {
+        const map = new Map();
+        skills.forEach(skill => {
+            if (!skill || !skill.code) {
+                return;
+            }
+            const key = normalizeSkillName(skill);
+            const existing = map.get(key);
+            if (!existing) {
+                map.set(key, skill);
+                return;
+            }
+            const existingMax = Number(existing.maxLevel || 0);
+            const currentMax = Number(skill.maxLevel || 0);
+            if (currentMax > existingMax) {
+                map.set(key, skill);
+            }
+        });
+        return Array.from(map.values());
+    }
+
+    function updateSelectedSkillPreview() {
+        const skill = findSkillByCode(skillSelect.value);
+        selectedSkillPreview.value = skill ? skillDisplayName(skill) : '';
+    }
+
     function updateSkillOptions() {
         const keyword = normalizeText(document.getElementById('skillSearch').value);
-        const filtered = allSkills.filter(skill => {
+        const dedupedSkills = dedupeSkillsByName(allSkills);
+        const filtered = dedupedSkills.filter(skill => {
             if (!skill || !skill.code) {
                 return false;
             }
@@ -142,15 +175,15 @@
         skillSelect.innerHTML = '';
         filtered.forEach(skill => {
             const opt = document.createElement('option');
-            const maxLv = skill.maxLevel || '?';
             opt.value = skill.code;
-            opt.textContent = `${skillDisplayName(skill)}（${skill.code}，Lv上限 ${maxLv}）`;
+            opt.textContent = `${skillDisplayName(skill)}`;
             skillSelect.appendChild(opt);
         });
 
         if (skillSelect.options.length > 0) {
             skillSelect.selectedIndex = 0;
         }
+        updateSelectedSkillPreview();
     }
 
     function renderSelectedSkills() {
@@ -162,13 +195,13 @@
         selectedSkillsBox.innerHTML = '';
         selectedTargetSkills.forEach((item, index) => {
             const skill = findSkillByCode(item.skillCode);
-            const maxLevel = skill && skill.maxLevel ? skill.maxLevel : 7;
+            const maxLevel = 7;
 
             const row = document.createElement('div');
             row.className = 'selected-skill-item';
 
             const label = document.createElement('div');
-            label.textContent = `${skillDisplayName(skill)}（${item.skillCode}）`;
+            label.textContent = `${skillDisplayName(skill)}`;
 
             const levelInput = document.createElement('input');
             levelInput.type = 'number';
@@ -211,7 +244,7 @@
 
         const skill = findSkillByCode(skillCode);
         const rawMin = Number(document.getElementById('selectedSkillMinLevel').value);
-        const maxLevel = skill && skill.maxLevel ? skill.maxLevel : 7;
+        const maxLevel = 7;
         const minLevel = Number.isFinite(rawMin) ? Math.max(1, Math.min(maxLevel, rawMin)) : 1;
 
         selectedTargetSkills.push({ skillCode, minLevel });
@@ -402,6 +435,7 @@
 
     document.getElementById('skillSearch').addEventListener('input', updateSkillOptions);
     document.getElementById('addSkillBtn').addEventListener('click', addSelectedSkill);
+    skillSelect.addEventListener('change', updateSelectedSkillPreview);
     skillSelect.addEventListener('dblclick', addSelectedSkill);
     renderSelectedSkills();
 

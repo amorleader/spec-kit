@@ -6,6 +6,7 @@ public class SkillResponse {
     private String name;
     private String nameZh;
     private int maxLevel;
+    private String effect;
 
     public long getId() {
         return id;
@@ -45,5 +46,13 @@ public class SkillResponse {
 
     public void setMaxLevel(int maxLevel) {
         this.maxLevel = maxLevel;
+    }
+
+    public String getEffect() {
+        return effect;
+    }
+
+    public void setEffect(String effect) {
+        this.effect = effect;
     }
 }

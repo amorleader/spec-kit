@@ -20,13 +20,18 @@ public class JdbcSkillCatalogRepository implements SkillCatalogPort {
     @Override
     public List<Skill> findAll() {
         return jdbcTemplate.query(
-                "SELECT id, code, name, name_zh, max_level FROM mhr_skills ORDER BY id ASC",
+            "SELECT t.id, t.code, t.name, t.name_zh, t.max_level, COALESCE(se.effect, '') AS effect FROM (" +
+                "SELECT DISTINCT ON (LOWER(TRIM(name_zh))) id, code, name, name_zh, max_level " +
+                "FROM mhr_skills " +
+                "ORDER BY LOWER(TRIM(name_zh)), max_level DESC, id ASC" +
+                ") t LEFT JOIN mhr_skill_effects se ON se.skill_code = t.code ORDER BY t.id ASC",
                 (rs, rowNum) -> new Skill(
                         rs.getLong("id"),
                         rs.getString("code"),
                         rs.getString("name"),
                         rs.getString("name_zh"),
-                        rs.getInt("max_level")
+                rs.getInt("max_level"),
+                rs.getString("effect")
                 )
         );
     }
@@ -34,13 +39,15 @@ public class JdbcSkillCatalogRepository implements SkillCatalogPort {
     @Override
     public Optional<Skill> findByCode(String code) {
         List<Skill> skills = jdbcTemplate.query(
-                "SELECT id, code, name, name_zh, max_level FROM mhr_skills WHERE code = ?",
+            "SELECT s.id, s.code, s.name, s.name_zh, s.max_level, COALESCE(se.effect, '') AS effect " +
+                "FROM mhr_skills s LEFT JOIN mhr_skill_effects se ON se.skill_code = s.code WHERE s.code = ?",
                 (rs, rowNum) -> new Skill(
                         rs.getLong("id"),
                         rs.getString("code"),
                         rs.getString("name"),
                         rs.getString("name_zh"),
-                        rs.getInt("max_level")
+                rs.getInt("max_level"),
+                rs.getString("effect")
                 ),
                 code
         );
