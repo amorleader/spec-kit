@@ -2,7 +2,10 @@ param(
     [int]$StartPage = 1,
     [int]$EndPage = 127,
     [string]$OutputJsonPath = "data/mhr/gamersky_armor.json",
-    [switch]$DisableSlotParsing
+    [switch]$DisableSlotParsing,
+    [bool]$IncludeSunbreakDlc = $true,
+    [string]$HandbookUrl = "https://www.gamersky.com/z/mhrise/handbook/",
+    [string[]]$ExtraPageUrls = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,15 +38,58 @@ function Get-PageUrl {
 function Get-HtmlContent {
     param([string]$Url)
 
-    $client = New-Object System.Net.WebClient
+    $tempHtml = Join-Path $env:TEMP ("mhr_armor_html_" + [guid]::NewGuid().ToString("N") + ".html")
     try {
-        $bytes = $client.DownloadData($Url)
-        $encoding = [System.Text.Encoding]::UTF8
-        return $encoding.GetString($bytes)
+        Invoke-WebRequest -Uri $Url -UseBasicParsing -OutFile $tempHtml
+        $bytes = [System.IO.File]::ReadAllBytes($tempHtml)
+
+        $asciiProbe = [System.Text.Encoding]::ASCII.GetString($bytes)
+        $charsetMatch = [regex]::Match($asciiProbe, '(?i)charset\s*=\s*["'']?([a-z0-9\-_]+)')
+        $charset = if ($charsetMatch.Success) { $charsetMatch.Groups[1].Value.ToLowerInvariant() } else { "" }
+
+        if ($charset -match "utf-8") {
+            return [System.Text.Encoding]::UTF8.GetString($bytes)
+        }
+        if ($charset -match "gb2312|gbk|gb18030") {
+            return [System.Text.Encoding]::GetEncoding("GB18030").GetString($bytes)
+        }
+
+        $utf8Text = [System.Text.Encoding]::UTF8.GetString($bytes)
+        if ($utf8Text -match "\u9632\u5177|\u66D9\u5149|\u602A\u7269\u730E\u4EBA") {
+            return $utf8Text
+        }
+        return [System.Text.Encoding]::GetEncoding("GB18030").GetString($bytes)
     }
     finally {
-        $client.Dispose()
+        if (Test-Path $tempHtml) {
+            Remove-Item $tempHtml -Force -ErrorAction SilentlyContinue
+        }
     }
+}
+
+function Get-SunbreakArmorUrls {
+    param([string]$Url)
+
+    $html = Get-HtmlContent -Url $Url
+    $sectionPattern = "(?is)\u66D9\u5149DLC\u9632\u5177\u56FE\u9274(?<block>.*?)(?:\u66D9\u5149DLC\u914D\u88C5|\u66D9\u5149DLC\u95EE\u9898\u89E3\u51B3)"
+    $sectionMatch = [regex]::Match($html, $sectionPattern)
+
+    if (-not $sectionMatch.Success) {
+        Write-Host "[import][warn] unable to locate Sunbreak armor module in handbook page: $Url"
+        return @()
+    }
+
+    $block = $sectionMatch.Groups["block"].Value
+    $urlMatches = [regex]::Matches($block, "https://www\.gamersky\.com/handbook/\d{6}/\d+\.shtml", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $result = New-Object System.Collections.Generic.List[string]
+    foreach ($m in $urlMatches) {
+        $u = $m.Value.Trim()
+        if (-not [string]::IsNullOrWhiteSpace($u) -and -not $result.Contains($u)) {
+            $result.Add($u)
+        }
+    }
+
+    return @($result)
 }
 
 function Get-Rarity {
@@ -382,12 +428,52 @@ $equipmentMap = @{}
 $skillCodeByZh = @{}
 $skillCatalog = New-Object System.Collections.ArrayList
 
+$pageUrls = New-Object System.Collections.Generic.List[string]
 for ($page = $StartPage; $page -le $EndPage; $page++) {
-    $url = Get-PageUrl -Page $page
-    Write-Host "[import] Fetching page ${page}: $url"
+    $pageUrls.Add((Get-PageUrl -Page $page))
+}
 
-    $html = Get-HtmlContent -Url $url
+if ($IncludeSunbreakDlc) {
+    $sunbreakUrls = Get-SunbreakArmorUrls -Url $HandbookUrl
+    Write-Host "[import] Sunbreak DLC armor links discovered: $($sunbreakUrls.Count)"
+    foreach ($u in $sunbreakUrls) {
+        if (-not $pageUrls.Contains($u)) {
+            $pageUrls.Add($u)
+        }
+    }
+}
+
+foreach ($u in $ExtraPageUrls) {
+    if ([string]::IsNullOrWhiteSpace($u)) {
+        continue
+    }
+    if (-not $pageUrls.Contains($u)) {
+        $pageUrls.Add($u)
+    }
+}
+
+for ($idx = 0; $idx -lt $pageUrls.Count; $idx++) {
+    $url = $pageUrls[$idx]
+    Write-Host "[import] Fetching page $($idx + 1)/$($pageUrls.Count): $url"
+
+    try {
+        $html = Get-HtmlContent -Url $url
+    }
+    catch {
+        Write-Host "[import][warn] failed to fetch page: $url"
+        Write-Host "[import][warn] reason: $($_.Exception.Message)"
+        Start-Sleep -Milliseconds 150
+        continue
+    }
+
     $rarity = Get-Rarity -Html $html
+    if ($rarity -lt 1) {
+        $rarity = 1
+    }
+    if ($rarity -eq 1 -and $url -match "https://www\.gamersky\.com/handbook/20(22|23|24)") {
+        # Sunbreak pages usually do not expose the legacy page-index rarity marker.
+        $rarity = 8
+    }
 
     $materialsTable = Extract-Table -Html $html -Marker $MARKER_MATERIALS
     $statsTable = Extract-Table -Html $html -Marker $MARKER_STATS
@@ -396,6 +482,12 @@ for ($page = $StartPage; $page -le $EndPage; $page++) {
     $materialRows = Parse-TableRows -TableHtml $materialsTable
     $statRows = Parse-TableRows -TableHtml $statsTable
     $skillRows = Parse-TableRows -TableHtml $skillsTable
+
+    if ($materialRows.Count -le 1 -and $statRows.Count -le 1 -and $skillRows.Count -le 1) {
+        Write-Host "[import][warn] skipped non-structured page: $url"
+        Start-Sleep -Milliseconds 150
+        continue
+    }
 
     $equipmentNamesInOrder = @()
     $first = $true
@@ -413,7 +505,7 @@ for ($page = $StartPage; $page -le $EndPage; $page++) {
                 $slotMapForPage = Parse-SlotsFromImage -ImageUrl $slotImageUrl -EquipmentNames $equipmentNamesInOrder
             }
             catch {
-                Write-Host "[import][warn] slot parse failed on page $page : $($_.Exception.Message)"
+                Write-Host "[import][warn] slot parse failed on page url=$url : $($_.Exception.Message)"
             }
         }
     }
