@@ -2,45 +2,45 @@
 
 ## Pilot Overview
 
-- Pilot date:
-- Runner:
-- Environment summary:
-- Flow used: docs-only / with assistance
+- Pilot date: 2026-03-08
+- Runner: Author (solo-proxy fallback)
+- Environment summary: Windows 11, Java 21.0.10, Maven 3.9.11, PostgreSQL local profile
+- Flow used: docs-only (solo-proxy fallback)
 
 ## Metrics
 
-- Total run duration:
-- Number of blockers:
-- Number of unresolved issues:
-- First-pass success rate (steps passed / total):
+- Total run duration: 0.18 minutes
+- Number of blockers: 0
+- Number of unresolved issues: 0
+- First-pass success rate (steps passed / total): 3/3
 
 ## Findings
 
 ### What worked well
 
-1.
-2.
+1. Command pack scripts executed end-to-end with process-scope execution-policy bypass.
+2. Build/package/smoke sequence produced deterministic PASS outcomes.
 
 ### What caused friction
 
-1.
-2.
+1. No non-author teammate was available in this cycle, so fallback mode was required.
+2. Execution-policy bypass remains a required explicit first step on Windows.
 
 ### Severity classification
 
-- Critical blockers:
-- Medium friction:
-- Minor usability notes:
+- Critical blockers: none
+- Medium friction: teammate availability gap
+- Minor usability notes: document execution-policy step prominently
 
 ## Recommendations
 
-1. Immediate fixes (this week)
-2. Short-term improvements (next sprint)
-3. Long-term improvements (next phase)
+1. Immediate fixes (this week): keep fallback mode documented; schedule real teammate session.
+2. Short-term improvements (next sprint): include one-click wrapper for execution-policy + script chain.
+3. Long-term improvements (next phase): migrate expense flow to DB-backed repository and re-run pilot with non-author.
 
 ## Go/No-Go Decision
 
-- Decision:
-- Conditions:
-- Owner:
-- Target date:
+- Decision: CONDITIONAL GO
+- Conditions: complete one non-author teammate run when available and finish DB-backed reference implementation.
+- Owner: project maintainer
+- Target date: 2026-03-31

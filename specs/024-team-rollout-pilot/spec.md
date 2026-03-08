@@ -19,6 +19,7 @@ Run one real teammate docs-only pilot on a clean machine context, collect measur
 ### In Scope
 
 - One real teammate pilot run using existing docs and `scripts/team-pilot/*`
+- Solo-proxy pilot mode when teammate is unavailable (author runs strictly docs-only with no ad-hoc shortcuts)
 - Structured capture of timing, blockers, and clarifying questions
 - Troubleshooting appendix for Windows setup issues (execution policy, PATH, JAVA_HOME, Maven command resolution)
 - One DB-backed reference implementation for Demo B expense flow (JPA/Jdbc)
@@ -48,7 +49,7 @@ Run one real teammate docs-only pilot on a clean machine context, collect measur
 
 ## Acceptance Criteria
 
-- AC1: At least one non-author teammate completes the full docs-only run.
+- AC1: At least one non-author teammate completes the full docs-only run; if unavailable, one solo-proxy docs-only run is completed with explicit constraints and evidence.
 - AC2: Pilot log includes step durations, confusion points, and exact blockers.
 - AC3: Troubleshooting appendix resolves all encountered blockers in the same session.
 - AC4: DB-backed expense path passes `mvn -q -DskipTests=false test` and `mvn -q package`.

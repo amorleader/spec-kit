@@ -8,6 +8,10 @@ Use this packet if you are a teammate running the workflow for the first time.
 
 Complete one docs-only run without live guidance and record outcomes.
 
+Fallback:
+
+- If no teammate is available, execute solo-proxy mode and record it in `solo-proxy-run-log.md`.
+
 ## Start Here
 
 1. Read: `specs/023-java-team-tool-mvp/quickstart.md`

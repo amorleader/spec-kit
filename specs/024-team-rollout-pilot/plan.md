@@ -6,7 +6,7 @@
 
 ## Goal
 
-Validate team adoption readiness with one real teammate docs-only run and remove the largest technical limitation by adding a DB-backed reference implementation for expense flow.
+Validate team adoption readiness with one real teammate docs-only run (or solo-proxy fallback when teammate is unavailable) and remove the largest technical limitation by adding a DB-backed reference implementation for expense flow.
 
 ## Workflow Architecture
 
@@ -16,6 +16,7 @@ Validate team adoption readiness with one real teammate docs-only run and remove
 
 2. Pilot Execution
 - Teammate executes preflight/build/package/smoke sequence using docs only.
+- Fallback: author executes strict solo-proxy run with the same command pack and run-log evidence.
 - Capture times, questions, and blockers live in template.
 
 3. Troubleshooting Hardening
@@ -44,6 +45,7 @@ Validate team adoption readiness with one real teammate docs-only run and remove
 - `specs/024-team-rollout-pilot/tasks.md`
 - `specs/024-team-rollout-pilot/teammate-run-packet.md`
 - `specs/024-team-rollout-pilot/teammate-run-log-template.md`
+- `specs/024-team-rollout-pilot/solo-proxy-run-log.md`
 - `specs/024-team-rollout-pilot/pilot-success-metrics.md`
 - `specs/024-team-rollout-pilot/troubleshooting-appendix.md`
 - `specs/024-team-rollout-pilot/pilot-result-report.md`
@@ -54,7 +56,7 @@ Validate team adoption readiness with one real teammate docs-only run and remove
   - Teammate packet and logging template are complete.
 
 - Gate 2: Pilot execution gate
-  - One non-author teammate run completed with structured evidence.
+  - One non-author teammate run completed with structured evidence, or one solo-proxy run completed with explicit fallback note.
 
 - Gate 3: Engineering gate
   - DB-backed implementation passes test and package commands.

@@ -58,3 +58,10 @@ Checklist:
 Rule:
 - Never commit credentials in files.
 - Set DB values via environment variables per session.
+
+## 6. Teammate unavailable fallback
+
+Rule:
+
+- If no non-author teammate is available in current cycle, run solo-proxy mode with strict docs-only constraints and save evidence in `solo-proxy-run-log.md`.
+- Mark decision as `CONDITIONAL GO` until a real teammate run is completed.

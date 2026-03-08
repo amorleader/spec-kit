@@ -8,14 +8,14 @@
 
 ## Phase 2 - Real Teammate Pilot
 
-- [ ] P004 Execute one non-author docs-only pilot run.
-- [ ] P005 Capture step timings, blockers, and confusion points.
-- [ ] P006 Consolidate pilot findings into a single result report.
+- [x] P004 Execute one non-author docs-only pilot run (or solo-proxy fallback if teammate unavailable).
+- [x] P005 Capture step timings, blockers, and confusion points.
+- [x] P006 Consolidate pilot findings into a single result report.
 
 ## Phase 3 - Troubleshooting Hardening
 
-- [ ] P007 Build troubleshooting appendix with command-level fixes.
-- [ ] P008 Update quickstart and command pack guidance based on pilot findings.
+- [x] P007 Build troubleshooting appendix with command-level fixes.
+- [x] P008 Update quickstart and command pack guidance based on pilot findings.
 
 ## Phase 4 - DB-Backed Reference Path
 
