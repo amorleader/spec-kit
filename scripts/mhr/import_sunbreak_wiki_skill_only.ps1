@@ -5,6 +5,8 @@ param(
     [string]$DbUser = "mhr_user",
     [string]$DbPassword = "",
     [string]$CatalogUrl = "https://wiki.gamersky.com/2/3110",
+    [string]$SkillCapsReferenceUrl = "https://www.gamersky.com/handbook/202207/1497439.shtml",
+    [string]$SkillCapsFilePath = "",
     [int]$RequestDelayMs = 80
 )
 
@@ -23,6 +25,7 @@ function Decode-UnicodeLiteral {
 $MARKER_SKILLS = Decode-UnicodeLiteral "\u5404\u4ef6\u9632\u5177\u7684\u6280\u80fd"
 $MARKER_DEFENSE = Decode-UnicodeLiteral "\u5404\u4ef6\u9632\u5177\u7684\u9632\u5fa1\u529b"
 $HEADER_EQUIP_NAME = Decode-UnicodeLiteral "\u9632\u5177\u540d\u79f0"
+$HEADER_SKILL_NAME = Decode-UnicodeLiteral "\u6280\u80fd"
 
 function Assert-CommandExists {
     param([string]$Name)
@@ -162,6 +165,107 @@ function Get-SkillEntriesFromMap {
     }
 
     return @()
+}
+
+function Get-SkillCapsFromReferencePage {
+    param([string]$Url)
+
+    if ([string]::IsNullOrWhiteSpace($Url)) {
+        return @{}
+    }
+
+    $tempPath = Join-Path $env:TEMP ("mhr_skill_caps_" + [guid]::NewGuid().ToString("N") + ".html")
+    try {
+        Invoke-WebRequest -Uri $Url -UseBasicParsing -OutFile $tempPath
+        $bytes = [System.IO.File]::ReadAllBytes($tempPath)
+
+        $asciiProbe = [System.Text.Encoding]::ASCII.GetString($bytes)
+        $probeLower = $asciiProbe.ToLowerInvariant()
+        $hasGbCharset = $probeLower.Contains('charset=gb') -or $probeLower.Contains('charset="gb') -or $probeLower.Contains("charset='gb")
+
+        $html = if ($hasGbCharset) {
+            [System.Text.Encoding]::GetEncoding("GB18030").GetString($bytes)
+        }
+        else {
+            [System.Text.Encoding]::UTF8.GetString($bytes)
+        }
+
+        $tableMatch = [regex]::Match($html, '(?is)<table[^>]*class="table2"[^>]*>.*?</table>')
+        if (-not $tableMatch.Success) {
+            return @{}
+        }
+
+        $caps = @{}
+        $rows = [regex]::Matches($tableMatch.Value, '(?is)<tr[^>]*>(?<row>.*?)</tr>')
+        foreach ($row in $rows) {
+            $cells = [regex]::Matches($row.Groups['row'].Value, '(?is)<td[^>]*>(?<cell>.*?)</td>')
+            if ($cells.Count -lt 3) {
+                continue
+            }
+
+            $nameZh = Strip-Html $cells[0].Groups['cell'].Value
+            if ([string]::IsNullOrWhiteSpace($nameZh) -or $nameZh -eq $HEADER_SKILL_NAME) {
+                continue
+            }
+
+            $effect = Decode-Html $cells[2].Groups['cell'].Value
+            $effect = [regex]::Replace($effect, '(?is)<br\s*/?>', ' ')
+            $effect = [regex]::Replace($effect, '(?is)<[^>]+>', ' ')
+            $effect = [regex]::Replace($effect, '\s+', ' ').Trim()
+
+            $levels = [regex]::Matches($effect, '(?i)Lv\s*([0-9]+)') | ForEach-Object { [int]$_.Groups[1].Value }
+            $maxLv = if ($levels.Count -gt 0) { ($levels | Measure-Object -Maximum).Maximum } else { 1 }
+
+            if (-not $caps.ContainsKey($nameZh) -or $maxLv -gt $caps[$nameZh]) {
+                $caps[$nameZh] = [int]$maxLv
+            }
+        }
+
+        return $caps
+    }
+    finally {
+        if (Test-Path $tempPath) {
+            Remove-Item $tempPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+function Get-SkillCapsFromFile {
+    param([string]$Path)
+
+    $caps = @{}
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return $caps
+    }
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return $caps
+    }
+
+    foreach ($line in (Get-Content -Path $Path -ErrorAction Stop)) {
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+        $parts = $line.Split('|')
+        if ($parts.Count -lt 2) {
+            continue
+        }
+
+        $nameZh = [string]$parts[0]
+        if ([string]::IsNullOrWhiteSpace($nameZh)) {
+            continue
+        }
+
+        $lv = 1
+        if (-not [int]::TryParse([string]$parts[1], [ref]$lv)) {
+            continue
+        }
+
+        if (-not $caps.ContainsKey($nameZh) -or $lv -gt $caps[$nameZh]) {
+            $caps[$nameZh] = [int]$lv
+        }
+    }
+
+    return $caps
 }
 
 function Get-SlotsFromSmallImage {
@@ -378,6 +482,59 @@ foreach ($entry in $entries) {
 Write-Host "[wiki-import] parsed pages: $parsedPages, skipped: $skippedPages"
 Write-Host "[wiki-import] equipment rows prepared: $($equipmentByName.Count), skills prepared: $($skillMaxByZh.Count)"
 
+if (-not [string]::IsNullOrWhiteSpace($SkillCapsReferenceUrl)) {
+    try {
+        $refCaps = Get-SkillCapsFromReferencePage -Url $SkillCapsReferenceUrl
+        $mergedByRef = 0
+        foreach ($nameZh in $refCaps.Keys) {
+            $capLv = [int]$refCaps[$nameZh]
+            if (-not $skillMaxByZh.ContainsKey($nameZh)) {
+                $skillMaxByZh[$nameZh] = $capLv
+                $mergedByRef += 1
+            }
+            elseif ($capLv -gt $skillMaxByZh[$nameZh]) {
+                $skillMaxByZh[$nameZh] = $capLv
+                $mergedByRef += 1
+            }
+        }
+        Write-Host "[wiki-import] reference caps merged from $SkillCapsReferenceUrl : $mergedByRef updates"
+    }
+    catch {
+        Write-Host "[wiki-import][warn] failed to merge reference skill caps: $SkillCapsReferenceUrl"
+        Write-Host "[wiki-import][warn] reason: $($_.Exception.Message)"
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($SkillCapsFilePath)) {
+    $defaultCapFile = Join-Path $PSScriptRoot "..\..\data\mhr\sunbreak_skill_caps_from_1497439.txt"
+    if (Test-Path -LiteralPath $defaultCapFile) {
+        $SkillCapsFilePath = (Resolve-Path -LiteralPath $defaultCapFile).Path
+    }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($SkillCapsFilePath)) {
+    try {
+        $fileCaps = Get-SkillCapsFromFile -Path $SkillCapsFilePath
+        $mergedByFile = 0
+        foreach ($nameZh in $fileCaps.Keys) {
+            $capLv = [int]$fileCaps[$nameZh]
+            if (-not $skillMaxByZh.ContainsKey($nameZh)) {
+                $skillMaxByZh[$nameZh] = $capLv
+                $mergedByFile += 1
+            }
+            elseif ($capLv -gt $skillMaxByZh[$nameZh]) {
+                $skillMaxByZh[$nameZh] = $capLv
+                $mergedByFile += 1
+            }
+        }
+        Write-Host "[wiki-import] file caps merged from $SkillCapsFilePath : $mergedByFile updates"
+    }
+    catch {
+        Write-Host "[wiki-import][warn] failed to merge file skill caps: $SkillCapsFilePath"
+        Write-Host "[wiki-import][warn] reason: $($_.Exception.Message)"
+    }
+}
+
 if ($equipmentByName.Count -eq 0) {
     throw "No equipment rows parsed from wiki catalog."
 }
@@ -402,6 +559,31 @@ foreach ($skillNameZh in ($skillMaxByZh.Keys | Sort-Object)) {
     })
 }
 
+$authoritativeCapByZh = @{}
+if (-not [string]::IsNullOrWhiteSpace($SkillCapsReferenceUrl)) {
+    try {
+        $refCapsForForce = Get-SkillCapsFromReferencePage -Url $SkillCapsReferenceUrl
+        foreach ($nameZh in $refCapsForForce.Keys) {
+            $authoritativeCapByZh[$nameZh] = [int]$refCapsForForce[$nameZh]
+        }
+    }
+    catch {
+        Write-Host "[wiki-import][warn] failed to load authoritative caps from reference page: $($_.Exception.Message)"
+    }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($SkillCapsFilePath)) {
+    try {
+        $fileCapsForForce = Get-SkillCapsFromFile -Path $SkillCapsFilePath
+        foreach ($nameZh in $fileCapsForForce.Keys) {
+            $authoritativeCapByZh[$nameZh] = [int]$fileCapsForForce[$nameZh]
+        }
+    }
+    catch {
+        Write-Host "[wiki-import][warn] failed to load authoritative caps from file: $($_.Exception.Message)"
+    }
+}
+
 if ($skillRows.Count -gt 0) {
     $sql.Add("WITH numbered AS (")
     $sql.Add("  SELECT ROW_NUMBER() OVER (ORDER BY x.code) AS rn, x.code, x.name_zh, x.max_level")
@@ -424,6 +606,19 @@ if ($skillRows.Count -gt 0) {
     $sql.Add("  name = EXCLUDED.name,")
     $sql.Add("  name_zh = EXCLUDED.name_zh,")
     $sql.Add("  max_level = GREATEST(mhr_skills.max_level, EXCLUDED.max_level);")
+
+    if ($authoritativeCapByZh.Count -gt 0) {
+        $sql.Add("UPDATE mhr_skills SET max_level = caps.max_level")
+        $sql.Add("FROM (")
+        foreach ($nameZh in ($authoritativeCapByZh.Keys | Sort-Object)) {
+            $safeNameZh = Escape-Sql $nameZh
+            $capLv = [int]$authoritativeCapByZh[$nameZh]
+            $sql.Add("  SELECT '$safeNameZh'::text AS name_zh, $capLv::int AS max_level UNION ALL")
+        }
+        $sql[$sql.Count - 1] = $sql[$sql.Count - 1].Substring(0, $sql[$sql.Count - 1].Length - " UNION ALL".Length)
+        $sql.Add(") caps")
+        $sql.Add("WHERE LOWER(TRIM(mhr_skills.name_zh)) = LOWER(TRIM(caps.name_zh));")
+    }
 
     $sql.Add("INSERT INTO mhr_skill_effects(skill_code, effect)")
     $sql.Add("SELECT s.code, '' FROM mhr_skills s")
