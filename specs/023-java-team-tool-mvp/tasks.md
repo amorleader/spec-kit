@@ -27,7 +27,7 @@
 ## Phase 4 - Demo 2 (Reproducibility Run)
 
 - [x] T016 Select sample requirement B (different business case)
-- [ ] T017 Repeat end-to-end flow for requirement B
+- [x] T017 Repeat end-to-end flow for requirement B
 - [ ] T018 Compare artifact quality and identify drift between run A and run B
 - [ ] T019 Update templates/checklists to remove major drift
 

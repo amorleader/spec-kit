@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker MVP</title>
+    <style>
+        body { font-family: "Segoe UI", sans-serif; margin: 24px; background: #f5f7fa; color: #111827; }
+        .grid { display: grid; gap: 16px; }
+        @media (min-width: 980px) { .grid { grid-template-columns: 1fr 1fr; } }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.08); padding: 14px; }
+        input, select, button { width: 100%; margin-top: 6px; margin-bottom: 8px; padding: 8px; box-sizing: border-box; }
+        button { border: none; background: #0f766e; color: #fff; border-radius: 6px; cursor: pointer; }
+        pre { background: #0b1220; color: #dbeafe; padding: 10px; border-radius: 8px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<h1>Personal Expense Tracker MVP</h1>
+<div class="grid">
+    <div class="card">
+        <h2>Create Transaction</h2>
+        <input id="amount" type="number" step="0.01" value="48.50" placeholder="Amount" />
+        <select id="category">
+            <option value="FOOD">FOOD</option>
+            <option value="TRANSPORT">TRANSPORT</option>
+            <option value="UTILITIES">UTILITIES</option>
+            <option value="ENTERTAINMENT">ENTERTAINMENT</option>
+            <option value="OTHER">OTHER</option>
+        </select>
+        <input id="occurredAt" type="date" />
+        <input id="note" type="text" value="Dinner" placeholder="Note" />
+        <button type="button" id="createBtn">Create</button>
+    </div>
+
+    <div class="card">
+        <h2>Query</h2>
+        <input id="fromDate" type="date" />
+        <input id="toDate" type="date" />
+        <button type="button" id="listBtn">List Transactions</button>
+        <button type="button" id="summaryBtn">Summary by Category</button>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Result</h2>
+    <pre id="result">No request yet.</pre>
+</div>
+
+<script>
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('occurredAt').value = today;
+    document.getElementById('fromDate').value = today;
+    document.getElementById('toDate').value = today;
+
+    const result = document.getElementById('result');
+
+    document.getElementById('createBtn').addEventListener('click', async () => {
+        const payload = {
+            amount: Number(document.getElementById('amount').value),
+            category: document.getElementById('category').value,
+            occurredAt: document.getElementById('occurredAt').value,
+            note: document.getElementById('note').value
+        };
+        const data = await callApi('/api/v1/transactions', 'POST', payload);
+        result.textContent = JSON.stringify(data, null, 2);
+    });
+
+    document.getElementById('listBtn').addEventListener('click', async () => {
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        const data = await callApi(`/api/v1/transactions?fromDate=${fromDate}&toDate=${toDate}`, 'GET');
+        result.textContent = JSON.stringify(data, null, 2);
+    });
+
+    document.getElementById('summaryBtn').addEventListener('click', async () => {
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        const data = await callApi(`/api/v1/summaries/by-category?fromDate=${fromDate}&toDate=${toDate}`, 'GET');
+        result.textContent = JSON.stringify(data, null, 2);
+    });
+
+    async function callApi(url, method, body) {
+        const resp = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: body ? JSON.stringify(body) : undefined
+        });
+        const json = await resp.json();
+        return json;
+    }
+</script>
+</body>
+</html>

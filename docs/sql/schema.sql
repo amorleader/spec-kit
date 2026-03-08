@@ -20,3 +20,17 @@ CREATE TABLE IF NOT EXISTS equipment_skill_points (
   PRIMARY KEY (equipment_id, skill_code),
   CONSTRAINT fk_esp_equipment FOREIGN KEY (equipment_id) REFERENCES equipments (id)
 );
+
+CREATE TABLE IF NOT EXISTS expense_categories (
+  code VARCHAR(32) PRIMARY KEY,
+  label VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS expense_transactions (
+  id BIGINT PRIMARY KEY,
+  amount NUMERIC(12,2) NOT NULL,
+  category_code VARCHAR(32) NOT NULL,
+  occurred_at DATE NOT NULL,
+  note VARCHAR(255),
+  CONSTRAINT fk_expense_category FOREIGN KEY (category_code) REFERENCES expense_categories (code)
+);

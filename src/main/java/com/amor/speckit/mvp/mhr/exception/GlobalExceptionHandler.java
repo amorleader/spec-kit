@@ -30,6 +30,9 @@ public class GlobalExceptionHandler {
             if ("maxResults".equals(fieldError.getField())) {
                 reason = "out_of_range";
                 message = "maxResults must be between 1 and 20";
+            } else if ("amount".equals(fieldError.getField())) {
+                reason = "out_of_range";
+                message = "amount must be greater than 0";
             }
             details.add(new ErrorDetail(fieldError.getField(), reason));
         }
