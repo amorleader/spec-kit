@@ -9,6 +9,14 @@
         .card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
         label { display: block; margin-top: 8px; font-weight: 600; }
         input, select, button { margin-top: 4px; padding: 8px; width: 100%; box-sizing: border-box; }
+        .skill-toolbar { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; }
+        .selected-skills { margin-top: 10px; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px; background: #f9fafb; }
+        .selected-skill-item { display: grid; grid-template-columns: 1fr 84px 72px; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .selected-skill-item:last-child { margin-bottom: 0; }
+        .selected-skill-item input { margin-top: 0; }
+        .selected-skill-item button { margin-top: 0; background: #dc2626; }
+        .selected-skill-item button:hover { background: #b91c1c; }
+        .hint { margin-top: 6px; color: #4b5563; font-size: 12px; }
         button { background: #1d4ed8; border: none; color: white; cursor: pointer; border-radius: 6px; }
         button:hover { background: #1e40af; }
         pre { white-space: pre-wrap; word-break: break-word; background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; }
@@ -28,11 +36,15 @@
             <option value="BOW">弓</option>
         </select>
 
-        <label for="attackBoost">攻击强化最低等级</label>
-        <input id="attackBoost" type="number" value="4" min="1" max="7"/>
-
-        <label for="weaknessExploit">弱点特效最低等级</label>
-        <input id="weaknessExploit" type="number" value="3" min="1" max="3"/>
+        <label for="skillSearch">目标技能（支持模糊搜索）</label>
+        <div class="skill-toolbar">
+            <input id="skillSearch" type="text" placeholder="输入技能名/拼音/代码，例如：攻击 看破 ATTACK"/>
+            <select id="skillSelect" size="6"></select>
+            <input id="selectedSkillMinLevel" type="number" value="1" min="1" max="7"/>
+            <button id="addSkillBtn" type="button">添加目标技能</button>
+        </div>
+        <div class="hint">先搜索并选中技能，再点击“添加目标技能”。</div>
+        <div id="selectedSkills" class="selected-skills"></div>
 
         <label for="maxResults">最多结果数</label>
         <input id="maxResults" type="number" value="5" min="1" max="20"/>
@@ -48,6 +60,8 @@
 
 <script>
     const resultBox = document.getElementById('resultBox');
+    const skillSelect = document.getElementById('skillSelect');
+    const selectedSkillsBox = document.getElementById('selectedSkills');
 
     const zhWeapon = {
         LONG_SWORD: '太刀',
@@ -71,6 +85,8 @@
 
     const skillNameMap = { ...zhSkill };
     const equipmentNameMap = {};
+    let allSkills = [];
+    let selectedTargetSkills = [];
 
     const zhReason = {
         out_of_range: '超出允许范围',
@@ -95,6 +111,135 @@
         return equipmentNameMap[name] || name;
     }
 
+    function normalizeText(v) {
+        return String(v || '').trim().toLowerCase();
+    }
+
+    function skillDisplayName(skill) {
+        if (!skill) {
+            return '未知技能';
+        }
+        return skill.nameZh || zSkill(skill.code) || skill.name || skill.code;
+    }
+
+    function findSkillByCode(skillCode) {
+        return allSkills.find(s => s && s.code === skillCode);
+    }
+
+    function updateSkillOptions() {
+        const keyword = normalizeText(document.getElementById('skillSearch').value);
+        const filtered = allSkills.filter(skill => {
+            if (!skill || !skill.code) {
+                return false;
+            }
+            if (!keyword) {
+                return true;
+            }
+            const hitText = [skill.code, skill.name, skill.nameZh].map(normalizeText).join(' ');
+            return hitText.includes(keyword);
+        });
+
+        skillSelect.innerHTML = '';
+        filtered.forEach(skill => {
+            const opt = document.createElement('option');
+            const maxLv = skill.maxLevel || '?';
+            opt.value = skill.code;
+            opt.textContent = `${skillDisplayName(skill)}（${skill.code}，Lv上限 ${maxLv}）`;
+            skillSelect.appendChild(opt);
+        });
+
+        if (skillSelect.options.length > 0) {
+            skillSelect.selectedIndex = 0;
+        }
+    }
+
+    function renderSelectedSkills() {
+        if (selectedTargetSkills.length === 0) {
+            selectedSkillsBox.textContent = '尚未添加目标技能';
+            return;
+        }
+
+        selectedSkillsBox.innerHTML = '';
+        selectedTargetSkills.forEach((item, index) => {
+            const skill = findSkillByCode(item.skillCode);
+            const maxLevel = skill && skill.maxLevel ? skill.maxLevel : 7;
+
+            const row = document.createElement('div');
+            row.className = 'selected-skill-item';
+
+            const label = document.createElement('div');
+            label.textContent = `${skillDisplayName(skill)}（${item.skillCode}）`;
+
+            const levelInput = document.createElement('input');
+            levelInput.type = 'number';
+            levelInput.min = '1';
+            levelInput.max = String(maxLevel);
+            levelInput.value = String(item.minLevel);
+            levelInput.addEventListener('change', () => {
+                const parsed = Number(levelInput.value);
+                const safe = Number.isFinite(parsed) ? Math.max(1, Math.min(maxLevel, parsed)) : 1;
+                selectedTargetSkills[index].minLevel = safe;
+                levelInput.value = String(safe);
+            });
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.textContent = '删除';
+            removeBtn.addEventListener('click', () => {
+                selectedTargetSkills = selectedTargetSkills.filter((_, i) => i !== index);
+                renderSelectedSkills();
+            });
+
+            row.appendChild(label);
+            row.appendChild(levelInput);
+            row.appendChild(removeBtn);
+            selectedSkillsBox.appendChild(row);
+        });
+    }
+
+    function addSelectedSkill() {
+        const skillCode = skillSelect.value;
+        if (!skillCode) {
+            resultBox.textContent = '请先从下拉列表选择一个技能。';
+            return;
+        }
+
+        if (selectedTargetSkills.some(s => s.skillCode === skillCode)) {
+            resultBox.textContent = '该技能已添加，请直接在列表中修改等级。';
+            return;
+        }
+
+        const skill = findSkillByCode(skillCode);
+        const rawMin = Number(document.getElementById('selectedSkillMinLevel').value);
+        const maxLevel = skill && skill.maxLevel ? skill.maxLevel : 7;
+        const minLevel = Number.isFinite(rawMin) ? Math.max(1, Math.min(maxLevel, rawMin)) : 1;
+
+        selectedTargetSkills.push({ skillCode, minLevel });
+        renderSelectedSkills();
+    }
+
+    function ensureDefaultTargetSkills() {
+        if (selectedTargetSkills.length > 0) {
+            return;
+        }
+        const defaults = [
+            { skillCode: 'ATTACK_BOOST', minLevel: 4 },
+            { skillCode: 'WEAKNESS_EXPLOIT', minLevel: 3 }
+        ];
+        defaults.forEach(d => {
+            const skill = findSkillByCode(d.skillCode);
+            if (!skill) {
+                return;
+            }
+            const maxLevel = skill.maxLevel || d.minLevel;
+            selectedTargetSkills.push({
+                skillCode: d.skillCode,
+                minLevel: Math.max(1, Math.min(maxLevel, d.minLevel))
+            });
+        });
+        renderSelectedSkills();
+    }
+
     async function loadLocalizationData(weaponType) {
         try {
             const [skillsRes, equipmentRes] = await Promise.all([
@@ -105,11 +250,14 @@
             if (skillsRes.ok) {
                 const skills = await skillsRes.json();
                 if (Array.isArray(skills)) {
+                    allSkills = skills;
                     skills.forEach(skill => {
                         if (skill && skill.code && skill.nameZh) {
                             skillNameMap[skill.code] = skill.nameZh;
                         }
                     });
+                    updateSkillOptions();
+                    ensureDefaultTargetSkills();
                 }
             }
 
@@ -208,12 +356,14 @@
         const weaponType = document.getElementById('weapon').value;
         await loadLocalizationData(weaponType);
 
+        if (selectedTargetSkills.length === 0) {
+            resultBox.textContent = '请至少添加 1 个目标技能。';
+            return;
+        }
+
         const payload = {
             weaponType,
-            targetSkills: [
-                { skillCode: 'ATTACK_BOOST', minLevel: Number(document.getElementById('attackBoost').value) },
-                { skillCode: 'WEAKNESS_EXPLOIT', minLevel: Number(document.getElementById('weaknessExploit').value) }
-            ],
+            targetSkills: selectedTargetSkills.map(s => ({ skillCode: s.skillCode, minLevel: s.minLevel })),
             maxResults: Number(document.getElementById('maxResults').value)
         };
 
@@ -249,6 +399,11 @@
     document.getElementById('weapon').addEventListener('change', async (event) => {
         await loadLocalizationData(event.target.value);
     });
+
+    document.getElementById('skillSearch').addEventListener('input', updateSkillOptions);
+    document.getElementById('addSkillBtn').addEventListener('click', addSelectedSkill);
+    skillSelect.addEventListener('dblclick', addSelectedSkill);
+    renderSelectedSkills();
 
     loadLocalizationData(document.getElementById('weapon').value);
 </script>
