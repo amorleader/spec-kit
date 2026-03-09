@@ -319,6 +319,20 @@ public class SessionService {
             return handlePendingActionReply(currentSession, pendingAction, normalizedMessage);
         }
 
+        ActionSpec actionSpec = detectActionIntent(normalizedMessage);
+        if (actionSpec != null) {
+            pendingActions.put(sessionId, new PendingAction(actionSpec.getAction(), actionSpec.isRequiresApproval()));
+            addTimeline(sessionId, "chat_action_pending", "success", "action=" + actionSpec.getAction());
+            appendMilestoneSnapshot(currentSession, "chat_action_pending",
+                "等待用户确认执行动作: " + actionSpec.getAction(), false);
+            String riskHint = actionSpec.isRequiresApproval() ? "该动作属于高风险操作。\n" : "";
+            String confirmationPrompt = "我识别到你希望执行工具动作: " + actionSpec.getAction() + "。\n"
+                + riskHint
+                + "这将由系统内置执行器触发（优先走 OpenHands）。\n"
+                + "请回复“确认执行”继续，或回复“取消执行”放弃。";
+            return new ChatResult(currentSession.getSessionId(), currentSession.getStatus(), confirmationPrompt);
+        }
+
         SpecKitSession before = currentSession;
         SpecKitSession after;
         String internalAction;
@@ -332,20 +346,6 @@ public class SessionService {
         } else {
             internalAction = "tasks";
             after = runTasks(sessionId, normalizedMessage);
-        }
-
-        ActionSpec actionSpec = detectActionIntent(normalizedMessage);
-        if (actionSpec != null) {
-            pendingActions.put(sessionId, new PendingAction(actionSpec.getAction(), actionSpec.isRequiresApproval()));
-            addTimeline(sessionId, "chat_action_pending", "success", "action=" + actionSpec.getAction());
-            appendMilestoneSnapshot(after, "chat_action_pending",
-                "等待用户确认执行动作: " + actionSpec.getAction(), false);
-            String riskHint = actionSpec.isRequiresApproval() ? "该动作属于高风险操作。\n" : "";
-            String confirmationPrompt = "我识别到你希望执行工具动作: " + actionSpec.getAction() + "。\n"
-                + riskHint
-                + "这将由系统内置执行器触发（优先走 OpenHands）。\n"
-                + "请回复“确认执行”继续，或回复“取消执行”放弃。";
-            return new ChatResult(after.getSessionId(), after.getStatus(), confirmationPrompt);
         }
 
         String assistantMessage;
