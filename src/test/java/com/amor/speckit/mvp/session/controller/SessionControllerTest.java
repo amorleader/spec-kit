@@ -177,4 +177,23 @@ class SessionControllerTest {
                 .andExpect(jsonPath("$.assistantMessage", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.assistantMessage").value(org.hamcrest.Matchers.containsString("AI 回复生成暂时失败")));
     }
+
+        @Test
+        void shouldExecuteControlledAction() throws Exception {
+                MvcResult createResult = mockMvc.perform(post("/api/sessions")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"projectName\":\"exec-poc\",\"objective\":\"verify controlled action\"}"))
+                                .andExpect(status().isOk())
+                                .andReturn();
+
+                String sessionId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("sessionId").asText();
+
+                mockMvc.perform(post("/api/sessions/{id}/execute", sessionId)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"action\":\"git_version\"}"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.sessionId").value(sessionId))
+                                .andExpect(jsonPath("$.action").value("git_version"))
+                                .andExpect(jsonPath("$.stdout", not(emptyOrNullString())));
+        }
 }

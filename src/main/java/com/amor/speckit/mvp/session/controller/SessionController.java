@@ -5,6 +5,8 @@ import com.amor.speckit.mvp.session.dto.ChatRequest;
 import com.amor.speckit.mvp.session.dto.ChatResponse;
 import com.amor.speckit.mvp.session.dto.CreateSessionRequest;
 import com.amor.speckit.mvp.session.dto.CreateSessionResponse;
+import com.amor.speckit.mvp.session.dto.ExecuteActionRequest;
+import com.amor.speckit.mvp.session.dto.ExecuteActionResponse;
 import com.amor.speckit.mvp.session.dto.MilestoneResponse;
 import com.amor.speckit.mvp.session.dto.SessionArtifactsResponse;
 import com.amor.speckit.mvp.session.dto.SessionSummaryResponse;
@@ -87,6 +89,19 @@ public class SessionController {
                              @Valid @RequestBody ChatRequest request) {
         SessionService.ChatResult result = sessionService.runChat(sessionId, request.getMessage());
         return new ChatResponse(result.getSessionId(), result.getStatus(), result.getAssistantMessage());
+    }
+
+    @PostMapping("/{id}/execute")
+    public ExecuteActionResponse execute(@PathVariable("id") String sessionId,
+                                         @Valid @RequestBody ExecuteActionRequest request) {
+        SessionService.ExecutionResult result = sessionService.runControlledAction(sessionId, request.getAction());
+        return new ExecuteActionResponse(
+                result.getSessionId(),
+                result.getAction(),
+                result.getExitCode(),
+                result.getStdout(),
+                result.getStderr()
+        );
     }
 
     @GetMapping("/{id}/artifacts")

@@ -18,6 +18,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +33,7 @@ public class SessionService {
     private static final String SCRIPT_ROOT = ".specify/scripts/powershell";
     private static final String TEMPLATE_ROOT = ".specify/templates";
     private static final String MILESTONE_PATH = ".spec-kit/milestone.md";
+    private static final long ACTION_TIMEOUT_SECONDS = 120;
 
     private final SessionWorkspaceManager sessionWorkspaceManager;
     private final ObjectMapper objectMapper;
@@ -115,6 +117,38 @@ public class SessionService {
         } catch (IOException ex) {
             throw new SessionPathIsolationException("Failed to read milestone", ex);
         }
+    }
+
+    public ExecutionResult runControlledAction(String sessionId, String action) {
+        String normalizedAction = normalize(action).toLowerCase();
+        if (normalizedAction.isEmpty()) {
+            throw new IllegalArgumentException("action must not be blank");
+        }
+
+        SpecKitSession session = requireSession(sessionId);
+        Path workspace = Path.of(session.getWorkspacePath());
+        ensureWorkspaceScaffold(workspace);
+
+        Map<String, List<String>> whitelist = buildActionWhitelist(workspace);
+        List<String> command = whitelist.get(normalizedAction);
+        if (command == null) {
+            throw new IllegalArgumentException("unsupported action: " + normalizedAction);
+        }
+
+        ProcessExecutionResult result = runCommand(workspace, command, ACTION_TIMEOUT_SECONDS);
+        String timelineAction = "execute_" + normalizedAction;
+        String summary = "exit=" + result.exitCode;
+        addTimeline(sessionId, timelineAction, result.exitCode == 0 ? "success" : "failed", summary);
+        appendMilestoneSnapshot(session, timelineAction,
+                "执行动作: " + normalizedAction + ", exit=" + result.exitCode, false);
+
+        return new ExecutionResult(
+                sessionId,
+                normalizedAction,
+                result.exitCode,
+                trimLog(result.stdout),
+                trimLog(result.stderr)
+        );
     }
 
     public SpecKitSession runSpecify(String sessionId, String input) {
@@ -385,6 +419,38 @@ public class SessionService {
             Thread.currentThread().interrupt();
             throw new SessionPathIsolationException("PowerShell execution interrupted", ex);
         }
+    }
+
+    private ProcessExecutionResult runCommand(Path workingDirectory,
+                                              List<String> command,
+                                              long timeoutSeconds) {
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.directory(workingDirectory.toFile());
+        try {
+            Process process = processBuilder.start();
+            String stdout = readStream(process.getInputStream());
+            String stderr = readStream(process.getErrorStream());
+            boolean finished = process.waitFor(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                throw new SessionPathIsolationException("Action timed out after " + timeoutSeconds + "s");
+            }
+            int exitCode = process.exitValue();
+            return new ProcessExecutionResult(exitCode, stdout, stderr);
+        } catch (IOException ex) {
+            throw new SessionPathIsolationException("Failed to execute action", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new SessionPathIsolationException("Action execution interrupted", ex);
+        }
+    }
+
+    private Map<String, List<String>> buildActionWhitelist(Path workspace) {
+        Map<String, List<String>> actions = new HashMap<>();
+        actions.put("git_status", List.of("git", "status", "--short", "--branch"));
+        actions.put("git_version", List.of("git", "--version"));
+        actions.put("maven_version", List.of("mvn", "-v"));
+        return actions;
     }
 
     private String readStream(java.io.InputStream inputStream) throws IOException {
@@ -714,6 +780,42 @@ public class SessionService {
 
         public String getAssistantMessage() {
             return assistantMessage;
+        }
+    }
+
+    public static class ExecutionResult {
+        private final String sessionId;
+        private final String action;
+        private final int exitCode;
+        private final String stdout;
+        private final String stderr;
+
+        public ExecutionResult(String sessionId, String action, int exitCode, String stdout, String stderr) {
+            this.sessionId = sessionId;
+            this.action = action;
+            this.exitCode = exitCode;
+            this.stdout = stdout;
+            this.stderr = stderr;
+        }
+
+        public String getSessionId() {
+            return sessionId;
+        }
+
+        public String getAction() {
+            return action;
+        }
+
+        public int getExitCode() {
+            return exitCode;
+        }
+
+        public String getStdout() {
+            return stdout;
+        }
+
+        public String getStderr() {
+            return stderr;
         }
     }
 
