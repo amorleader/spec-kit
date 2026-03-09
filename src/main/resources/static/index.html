@@ -3,443 +3,486 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>怪猎崛起配装助手 MVP</title>
+    <title>spec-kit PoC Console</title>
     <style>
-        body { font-family: "Segoe UI", sans-serif; margin: 24px; background: #f6f7fb; color: #1f2937; }
-        .card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-        label { display: block; margin-top: 8px; font-weight: 600; }
-        input, select, button { margin-top: 4px; padding: 8px; width: 100%; box-sizing: border-box; }
-        .skill-toolbar { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; }
-        .selected-skills { margin-top: 10px; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px; background: #f9fafb; }
-        .selected-skill-item { display: grid; grid-template-columns: 1fr 84px 72px; gap: 8px; align-items: center; margin-bottom: 8px; }
-        .selected-skill-item:last-child { margin-bottom: 0; }
-        .selected-skill-item input { margin-top: 0; }
-        .selected-skill-item button { margin-top: 0; background: #dc2626; }
-        .selected-skill-item button:hover { background: #b91c1c; }
-        .hint { margin-top: 6px; color: #4b5563; font-size: 12px; }
-        button { background: #1d4ed8; border: none; color: white; cursor: pointer; border-radius: 6px; }
-        button:hover { background: #1e40af; }
-        pre { white-space: pre-wrap; word-break: break-word; background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; }
-        @media (min-width: 900px) {
-            .layout { display: grid; grid-template-columns: 380px 1fr; gap: 16px; }
+        :root {
+            --bg-1: #0b1218;
+            --bg-2: #18232d;
+            --panel: #0f1b24cc;
+            --line: #35566b;
+            --text: #e7f2fb;
+            --muted: #9db6c7;
+            --accent: #3dd598;
+            --warn: #ffb34d;
+            --error: #ff5d73;
+            --done: #37c3ff;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+            background:
+                radial-gradient(circle at 10% 8%, #2c7da040 0, transparent 28%),
+                radial-gradient(circle at 88% 12%, #3dd59833 0, transparent 30%),
+                linear-gradient(160deg, var(--bg-1), var(--bg-2));
+        }
+
+        .app {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px 14px 28px;
+        }
+
+        .hero {
+            padding: 14px 16px;
+            border: 1px solid #3f697f;
+            border-radius: 14px;
+            background: linear-gradient(110deg, #0f2734ba, #14202b90);
+            box-shadow: 0 16px 40px #00000040;
+        }
+
+        .hero h1 {
+            margin: 0;
+            letter-spacing: 0.4px;
+            font-size: 1.32rem;
+        }
+
+        .hero p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .layout {
+            margin-top: 14px;
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 1fr;
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--panel);
+            backdrop-filter: blur(4px);
+            box-shadow: 0 12px 26px #00000033;
+            padding: 12px;
+        }
+
+        .panel h2 {
+            margin: 0 0 10px;
+            font-size: 1rem;
+        }
+
+        .field {
+            margin-bottom: 8px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--muted);
+            font-size: 0.83rem;
+        }
+
+        .field input,
+        .field select,
+        .composer textarea,
+        .composer button {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #42657b;
+            color: var(--text);
+            background: #0c1a23;
+            padding: 10px;
+            font: inherit;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .composer textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px #3dd59830;
+        }
+
+        .btn-row {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: 1fr;
+        }
+
+        button {
+            cursor: pointer;
+            transition: transform 0.16s ease, background 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            background: #102734;
+        }
+
+        .create-btn {
+            border-color: #45bfeb;
+            background: #0f2734;
+        }
+
+        .composer textarea {
+            resize: vertical;
+            min-height: 96px;
+        }
+
+        .composer-footer {
+            margin-top: 8px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .status-line {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 0.82rem;
+            word-break: break-all;
+        }
+
+        .progress {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .stage {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #446176;
+            background: #0f1d27;
+            text-align: center;
+            font-size: 0.83rem;
+            color: var(--muted);
+        }
+
+        .stage.done {
+            color: #001a24;
+            border-color: #63d8ff;
+            background: linear-gradient(140deg, #3bc7ff, #84f0ff);
+        }
+
+        .tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .tab-btn.active {
+            border-color: #5dddb5;
+            background: #12302a;
+            color: #b8f6df;
+        }
+
+        pre {
+            margin: 0;
+            min-height: 260px;
+            max-height: 430px;
+            overflow: auto;
+            border-radius: 8px;
+            border: 1px solid #3d5f73;
+            background: #08131a;
+            color: #c5e7ff;
+            padding: 12px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.5;
+        }
+
+        .timeline {
+            display: grid;
+            gap: 7px;
+            max-height: 250px;
+            overflow: auto;
+        }
+
+        .event {
+            border: 1px solid #3a5d70;
+            border-radius: 7px;
+            background: #0d1d27;
+            padding: 7px;
+            font-size: 0.8rem;
+        }
+
+        .event .meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted);
+            margin-bottom: 3px;
+            gap: 8px;
+        }
+
+        .event .ok { color: var(--accent); }
+        .event .fail { color: var(--error); }
+
+        .console {
+            margin-top: 8px;
+            border: 1px dashed #47687b;
+            border-radius: 8px;
+            background: #0b1620;
+            padding: 8px;
+            max-height: 170px;
+            overflow: auto;
+            font-size: 0.8rem;
+            color: #a5c0d3;
+        }
+
+        .console div { margin-bottom: 4px; }
+
+        .warn { color: var(--warn); }
+        .error { color: var(--error); }
+
+        @media (min-width: 980px) {
+            .layout {
+                grid-template-columns: 360px 1fr;
+            }
+            .right-grid {
+                display: grid;
+                gap: 12px;
+                grid-template-rows: auto 1fr;
+            }
         }
     </style>
 </head>
 <body>
-<h1>怪猎崛起配装助手 MVP</h1>
-<div class="layout">
-    <div class="card">
-        <label for="weapon">武器类型</label>
-        <select id="weapon">
-            <option value="LONG_SWORD">太刀</option>
-            <option value="GREAT_SWORD">大剑</option>
-            <option value="BOW">弓</option>
-        </select>
+<div class="app">
+    <section class="hero">
+        <h1>spec-kit Workflow Console</h1>
+        <p>对话式推进: specify -> plan -> tasks，并实时查看文档与执行时间线。</p>
+    </section>
 
-        <label for="skillSearch">目标技能（支持模糊搜索）</label>
-        <div class="skill-toolbar">
-            <input id="skillSearch" type="text" placeholder="输入技能名/拼音/代码，例如：攻击 看破 ATTACK"/>
-            <select id="skillSelect" size="6"></select>
-            <input id="selectedSkillPreview" type="text" placeholder="目标技能" readonly/>
-            <input id="selectedSkillMinLevel" type="number" value="1" min="1" max="7"/>
-            <button id="addSkillBtn" type="button">添加目标技能</button>
-        </div>
-        <div class="hint">点击下拉项后会回显到“目标技能”，再点击“添加目标技能”。</div>
-        <div id="selectedSkills" class="selected-skills"></div>
+    <div class="layout">
+        <section class="panel">
+            <h2>会话控制台</h2>
+            <div class="field">
+                <label for="projectName">项目名</label>
+                <input id="projectName" type="text" value="spec-kit-poc" placeholder="例如: cost-optimizer"/>
+            </div>
+            <div class="field">
+                <label for="objective">目标</label>
+                <input id="objective" type="text" value="搭建可视化 spec-kit PoC" placeholder="一句话目标"/>
+            </div>
+            <div class="btn-row">
+                <button class="create-btn" id="createSessionBtn" type="button">新建会话</button>
+            </div>
+            <div class="status-line" id="sessionStatusLine">尚未创建会话</div>
 
-        <label for="maxResults">最多结果数</label>
-        <input id="maxResults" type="number" value="5" min="1" max="20"/>
+            <div class="composer" style="margin-top: 10px;">
+                <textarea id="chatInput" placeholder="输入本轮增量需求，例如：补充验收标准并补充风险清单"></textarea>
+                <div class="composer-footer">
+                    <select id="stageSelect">
+                        <option value="specify">执行 Specify</option>
+                        <option value="plan">执行 Plan</option>
+                        <option value="tasks">执行 Tasks</option>
+                    </select>
+                    <button id="sendBtn" type="button">发送并执行</button>
+                </div>
+            </div>
 
-        <button id="generateBtn" type="button">生成配装</button>
-    </div>
+            <div class="console" id="consoleLog"></div>
+        </section>
 
-    <div class="card">
-        <h2>结果</h2>
-        <pre id="resultBox">尚未请求，请先点击“生成配装”。</pre>
+        <section class="right-grid">
+            <div class="panel">
+                <h2>阶段进度</h2>
+                <div class="progress">
+                    <div class="stage" id="stage-spec">SPECIFY</div>
+                    <div class="stage" id="stage-plan">PLAN</div>
+                    <div class="stage" id="stage-tasks">TASKS</div>
+                </div>
+                <h2 style="margin-top: 12px;">Timeline</h2>
+                <div class="timeline" id="timeline"></div>
+            </div>
+
+            <div class="panel">
+                <h2>文档查看区</h2>
+                <div class="tabs">
+                    <button class="tab-btn active" type="button" data-doc="spec">spec.md</button>
+                    <button class="tab-btn" type="button" data-doc="plan">plan.md</button>
+                    <button class="tab-btn" type="button" data-doc="tasks">tasks.md</button>
+                </div>
+                <pre id="artifactView">会话创建后可查看文档内容</pre>
+            </div>
+        </section>
     </div>
 </div>
 
 <script>
-    const resultBox = document.getElementById('resultBox');
-    const skillSelect = document.getElementById('skillSelect');
-    const selectedSkillPreview = document.getElementById('selectedSkillPreview');
-    const selectedSkillsBox = document.getElementById('selectedSkills');
-
-    const zhWeapon = {
-        LONG_SWORD: '太刀',
-        GREAT_SWORD: '大剑',
-        BOW: '弓'
+    const state = {
+        sessionId: null,
+        status: "CREATED",
+        activeDoc: "spec",
+        artifacts: {
+            specMd: "",
+            planMd: "",
+            tasksMd: "",
+            timeline: []
+        }
     };
 
-    const zhPart = {
-        HEAD: '头部',
-        CHEST: '胸部',
-        ARMS: '手部',
-        WAIST: '腰部',
-        LEGS: '腿部'
+    const stageMap = {
+        CREATED: 0,
+        SPECIFIED: 1,
+        PLANNED: 2,
+        TASKS_GENERATED: 3
     };
 
-    const zhSkill = {
-        ATTACK_BOOST: '攻击强化',
-        WEAKNESS_EXPLOIT: '弱点特效',
-        CRITICAL_EYE: '看破'
+    const stageEl = {
+        spec: document.getElementById("stage-spec"),
+        plan: document.getElementById("stage-plan"),
+        tasks: document.getElementById("stage-tasks")
     };
 
-    const skillNameMap = { ...zhSkill };
-    const equipmentNameMap = {};
-    let allSkills = [];
-    let selectedTargetSkills = [];
-
-    const zhReason = {
-        out_of_range: '超出允许范围',
-        unknown_skill: '未知技能代码',
-        exceeds_skill_max: '超过技能最大等级',
-        generation_timeout: '生成超时（超过 30 秒）'
-    };
-
-    function zWeapon(code) {
-        return zhWeapon[code] || code;
-    }
-
-    function zPart(code) {
-        return zhPart[code] || code;
-    }
-
-    function zSkill(code) {
-        return skillNameMap[code] || code;
-    }
-
-    function zEquipment(name) {
-        return equipmentNameMap[name] || name;
-    }
-
-    function normalizeText(v) {
-        return String(v || '').trim().toLowerCase();
-    }
-
-    function skillDisplayName(skill) {
-        if (!skill) {
-            return '未知技能';
+    function pushLog(message, level) {
+        const box = document.getElementById("consoleLog");
+        const line = document.createElement("div");
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        if (level) {
+            line.classList.add(level);
         }
-        return skill.nameZh || zSkill(skill.code) || skill.name || skill.code;
+        box.prepend(line);
     }
 
-    function findSkillByCode(skillCode) {
-        return allSkills.find(s => s && s.code === skillCode);
-    }
-
-    function normalizeSkillName(skill) {
-        return normalizeText((skill && (skill.nameZh || skill.name || skill.code)) || '');
-    }
-
-    function dedupeSkillsByName(skills) {
-        const map = new Map();
-        skills.forEach(skill => {
-            if (!skill || !skill.code) {
-                return;
-            }
-            const key = normalizeSkillName(skill);
-            const existing = map.get(key);
-            if (!existing) {
-                map.set(key, skill);
-                return;
-            }
-            const existingMax = Number(existing.maxLevel || 0);
-            const currentMax = Number(skill.maxLevel || 0);
-            if (currentMax > existingMax) {
-                map.set(key, skill);
-            }
-        });
-        return Array.from(map.values());
-    }
-
-    function updateSelectedSkillPreview() {
-        const skill = findSkillByCode(skillSelect.value);
-        selectedSkillPreview.value = skill ? skillDisplayName(skill) : '';
-    }
-
-    function updateSkillOptions() {
-        const keyword = normalizeText(document.getElementById('skillSearch').value);
-        const dedupedSkills = dedupeSkillsByName(allSkills);
-        const filtered = dedupedSkills.filter(skill => {
-            if (!skill || !skill.code) {
-                return false;
-            }
-            if (!keyword) {
-                return true;
-            }
-            const hitText = [skill.code, skill.name, skill.nameZh].map(normalizeText).join(' ');
-            return hitText.includes(keyword);
-        });
-
-        skillSelect.innerHTML = '';
-        filtered.forEach(skill => {
-            const opt = document.createElement('option');
-            opt.value = skill.code;
-            opt.textContent = `${skillDisplayName(skill)}`;
-            skillSelect.appendChild(opt);
-        });
-
-        if (skillSelect.options.length > 0) {
-            skillSelect.selectedIndex = 0;
-        }
-        updateSelectedSkillPreview();
-    }
-
-    function renderSelectedSkills() {
-        if (selectedTargetSkills.length === 0) {
-            selectedSkillsBox.textContent = '尚未添加目标技能';
+    function updateStatusBar(maskedPath) {
+        const label = document.getElementById("sessionStatusLine");
+        if (!state.sessionId) {
+            label.textContent = "尚未创建会话";
             return;
         }
-
-        selectedSkillsBox.innerHTML = '';
-        selectedTargetSkills.forEach((item, index) => {
-            const skill = findSkillByCode(item.skillCode);
-            const maxLevel = 7;
-
-            const row = document.createElement('div');
-            row.className = 'selected-skill-item';
-
-            const label = document.createElement('div');
-            label.textContent = `${skillDisplayName(skill)}`;
-
-            const levelInput = document.createElement('input');
-            levelInput.type = 'number';
-            levelInput.min = '1';
-            levelInput.max = String(maxLevel);
-            levelInput.value = String(item.minLevel);
-            levelInput.addEventListener('change', () => {
-                const parsed = Number(levelInput.value);
-                const safe = Number.isFinite(parsed) ? Math.max(1, Math.min(maxLevel, parsed)) : 1;
-                selectedTargetSkills[index].minLevel = safe;
-                levelInput.value = String(safe);
-            });
-
-            const removeBtn = document.createElement('button');
-            removeBtn.type = 'button';
-            removeBtn.textContent = '删除';
-            removeBtn.addEventListener('click', () => {
-                selectedTargetSkills = selectedTargetSkills.filter((_, i) => i !== index);
-                renderSelectedSkills();
-            });
-
-            row.appendChild(label);
-            row.appendChild(levelInput);
-            row.appendChild(removeBtn);
-            selectedSkillsBox.appendChild(row);
-        });
+        label.textContent = `sessionId=${state.sessionId} | status=${state.status} | workspace=${maskedPath || "***"}`;
     }
 
-    function addSelectedSkill() {
-        const skillCode = skillSelect.value;
-        if (!skillCode) {
-            resultBox.textContent = '请先从下拉列表选择一个技能。';
-            return;
-        }
-
-        if (selectedTargetSkills.some(s => s.skillCode === skillCode)) {
-            resultBox.textContent = '该技能已添加，请直接在列表中修改等级。';
-            return;
-        }
-
-        const skill = findSkillByCode(skillCode);
-        const rawMin = Number(document.getElementById('selectedSkillMinLevel').value);
-        const maxLevel = 7;
-        const minLevel = Number.isFinite(rawMin) ? Math.max(1, Math.min(maxLevel, rawMin)) : 1;
-
-        selectedTargetSkills.push({ skillCode, minLevel });
-        renderSelectedSkills();
+    function updateProgress() {
+        const rank = stageMap[state.status] || 0;
+        stageEl.spec.classList.toggle("done", rank >= 1);
+        stageEl.plan.classList.toggle("done", rank >= 2);
+        stageEl.tasks.classList.toggle("done", rank >= 3);
     }
 
-    function ensureDefaultTargetSkills() {
-        if (selectedTargetSkills.length > 0) {
-            return;
-        }
-        const defaults = [
-            { skillCode: 'ATTACK_BOOST', minLevel: 4 },
-            { skillCode: 'WEAKNESS_EXPLOIT', minLevel: 3 }
-        ];
-        defaults.forEach(d => {
-            const skill = findSkillByCode(d.skillCode);
-            if (!skill) {
-                return;
-            }
-            const maxLevel = skill.maxLevel || d.minLevel;
-            selectedTargetSkills.push({
-                skillCode: d.skillCode,
-                minLevel: Math.max(1, Math.min(maxLevel, d.minLevel))
-            });
-        });
-        renderSelectedSkills();
-    }
-
-    async function loadLocalizationData(weaponType) {
-        try {
-            const [skillsRes, equipmentRes] = await Promise.all([
-                fetch('/api/v1/skills'),
-                fetch(`/api/v1/equipments?weaponType=${encodeURIComponent(weaponType)}`)
-            ]);
-
-            if (skillsRes.ok) {
-                const skills = await skillsRes.json();
-                if (Array.isArray(skills)) {
-                    allSkills = skills;
-                    skills.forEach(skill => {
-                        if (skill && skill.code && skill.nameZh) {
-                            skillNameMap[skill.code] = skill.nameZh;
-                        }
-                    });
-                    updateSkillOptions();
-                    ensureDefaultTargetSkills();
-                }
-            }
-
-            if (equipmentRes.ok) {
-                const equipments = await equipmentRes.json();
-                if (Array.isArray(equipments)) {
-                    equipments.forEach(equip => {
-                        if (equip && equip.name && equip.nameZh) {
-                            equipmentNameMap[equip.name] = equip.nameZh;
-                        }
-                    });
-                }
-            }
-        } catch (e) {
-            // Localization fetch failure should not block core build generation.
-        }
-    }
-
-    function formatSkills(skillPoints) {
-        if (!skillPoints || Object.keys(skillPoints).length === 0) {
-            return '无';
-        }
-        return Object.entries(skillPoints)
-            .map(([code, level]) => `${zSkill(code)} Lv${level}`)
-            .join('，');
-    }
-
-    function formatSlotSummary(slotSummary) {
-        if (!slotSummary || Object.keys(slotSummary).length === 0) {
-            return '无';
-        }
-        return Object.entries(slotSummary)
-            .sort((a, b) => Number(a[0]) - Number(b[0]))
-            .map(([slotLevel, count]) => `${slotLevel}级孔 x ${count}`)
-            .join('，');
-    }
-
-    function renderResult(json, requestPayload) {
-        const lines = [];
-        lines.push(`武器类型：${zWeapon(requestPayload.weaponType)}（${requestPayload.weaponType}）`);
-        lines.push(`目标技能：${requestPayload.targetSkills.map(s => `${zSkill(s.skillCode)} Lv${s.minLevel}`).join('，')}`);
-        lines.push(`结果上限：${requestPayload.maxResults}`);
-        lines.push('');
-
-        const results = json && Array.isArray(json.results) ? json.results : [];
-        if (results.length === 0) {
-            lines.push('未找到满足条件的配装结果。');
-            return lines.join('\n');
-        }
-
-        lines.push(`共找到 ${results.length} 套配装：`);
-        lines.push('');
-
-        results.forEach((r, index) => {
-            lines.push(`【方案 ${index + 1}】ID: ${r.id || 'N/A'}，评分: ${r.score}`);
-            lines.push('装备：');
-
-            const equipmentSet = r.equipmentSet || {};
-            Object.entries(equipmentSet).forEach(([part, equip]) => {
-                const displayName = equip && (equip.nameZh || equip.name)
-                    ? (equip.nameZh || zEquipment(equip.name))
-                    : '未知装备';
-                const rawName = equip && equip.name ? `（${equip.name}）` : '';
-                const rarity = equip && equip.rarity ? `，稀有度 R${equip.rarity}` : '';
-                const slots = equip && Array.isArray(equip.slots) && equip.slots.length > 0
-                    ? `，插槽 ${equip.slots.join('/')}`
-                    : '，插槽 无';
-                const skills = equip ? formatSkills(equip.skillPoints) : '无';
-
-                lines.push(`- ${zPart(part)}: ${displayName}${rawName}${rarity}${slots}`);
-                lines.push(`  技能：${skills}`);
-            });
-
-            lines.push(`总技能：${formatSkills(r.totalSkills)}`);
-            lines.push(`孔位汇总：${formatSlotSummary(r.slotSummary)}`);
-            lines.push('');
-        });
-
-        return lines.join('\n');
-    }
-
-    function renderErrorMessage(json, status) {
-        if (!json || typeof json !== 'object') {
-            return `请求失败（HTTP ${status}）。`;
-        }
-
-        const details = Array.isArray(json.details) ? json.details : [];
-        const detailText = details.length === 0
-            ? '无详细错误信息'
-            : details.map(d => `${d.field || 'unknown'}: ${zhReason[d.reason] || d.reason || '未知原因'}`).join('；');
-
-        return `请求失败（HTTP ${status}）\n错误码：${json.code || 'N/A'}\n错误信息：${json.message || 'N/A'}\n详细：${detailText}`;
-    }
-
-    document.getElementById('generateBtn').addEventListener('click', async () => {
-        const weaponType = document.getElementById('weapon').value;
-        await loadLocalizationData(weaponType);
-
-        if (selectedTargetSkills.length === 0) {
-            resultBox.textContent = '请至少添加 1 个目标技能。';
-            return;
-        }
-
-        const payload = {
-            weaponType,
-            targetSkills: selectedTargetSkills.map(s => ({ skillCode: s.skillCode, minLevel: s.minLevel })),
-            maxResults: Number(document.getElementById('maxResults').value)
+    function renderArtifacts() {
+        const view = document.getElementById("artifactView");
+        const map = {
+            spec: state.artifacts.specMd,
+            plan: state.artifacts.planMd,
+            tasks: state.artifacts.tasksMd
         };
+        const value = map[state.activeDoc];
+        view.textContent = value || "当前文档为空";
+    }
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30_000);
+    function renderTimeline() {
+        const box = document.getElementById("timeline");
+        box.innerHTML = "";
+        if (!state.artifacts.timeline || state.artifacts.timeline.length === 0) {
+            box.textContent = "暂无 timeline 记录";
+            return;
+        }
+
+        state.artifacts.timeline.slice().reverse().forEach(event => {
+            const item = document.createElement("div");
+            item.className = "event";
+            const ok = event.result === "success";
+            item.innerHTML = `<div class="meta"><span>${event.action}</span><span>${new Date(event.time).toLocaleString()}</span></div>`
+                + `<div class="${ok ? "ok" : "fail"}">${event.result}${event.error ? " | " + event.error : ""}</div>`;
+            box.appendChild(item);
+        });
+    }
+
+    async function callApi(url, method, body) {
+        const resp = await fetch(url, {
+            method,
+            headers: {"Content-Type": "application/json"},
+            body: body ? JSON.stringify(body) : undefined
+        });
+
+        const payload = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+            const msg = payload.message || `HTTP ${resp.status}`;
+            throw new Error(msg);
+        }
+        return payload;
+    }
+
+    async function refreshArtifacts() {
+        if (!state.sessionId) {
+            return;
+        }
+        const data = await callApi(`/api/sessions/${encodeURIComponent(state.sessionId)}/artifacts`, "GET");
+        state.artifacts = data;
+        renderArtifacts();
+        renderTimeline();
+    }
+
+    document.getElementById("createSessionBtn").addEventListener("click", async () => {
+        const projectName = document.getElementById("projectName").value.trim();
+        const objective = document.getElementById("objective").value.trim();
 
         try {
-            const res = await fetch('/api/v1/builds/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            const json = await res.json();
-
-            if (!res.ok) {
-                resultBox.textContent = renderErrorMessage(json, res.status);
-                return;
-            }
-
-            resultBox.textContent = renderResult(json, payload);
-        } catch (e) {
-            clearTimeout(timeoutId);
-            if (e && e.name === 'AbortError') {
-                resultBox.textContent = '请求超时：生成配装超过 30 秒，已自动取消。请缩小技能条件或结果数量后重试。';
-                return;
-            }
-            resultBox.textContent = '请求失败：' + e.message;
+            const data = await callApi("/api/sessions", "POST", { projectName, objective });
+            state.sessionId = data.sessionId;
+            state.status = data.status;
+            state.artifacts = { specMd: "", planMd: "", tasksMd: "", timeline: [] };
+            updateStatusBar(data.workspacePath);
+            updateProgress();
+            renderArtifacts();
+            renderTimeline();
+            pushLog(`会话创建成功: ${state.sessionId}`);
+        } catch (err) {
+            pushLog(`会话创建失败: ${err.message}`, "error");
         }
     });
 
-    document.getElementById('weapon').addEventListener('change', async (event) => {
-        await loadLocalizationData(event.target.value);
+    document.getElementById("sendBtn").addEventListener("click", async () => {
+        if (!state.sessionId) {
+            pushLog("请先创建会话", "warn");
+            return;
+        }
+
+        const input = document.getElementById("chatInput").value.trim();
+        if (!input) {
+            pushLog("请输入本轮需求", "warn");
+            return;
+        }
+
+        const stage = document.getElementById("stageSelect").value;
+        try {
+            const data = await callApi(`/api/sessions/${encodeURIComponent(state.sessionId)}/${stage}`, "POST", { input });
+            state.status = data.status;
+            updateStatusBar();
+            updateProgress();
+            await refreshArtifacts();
+            pushLog(`执行 ${stage} 成功`);
+            document.getElementById("chatInput").value = "";
+        } catch (err) {
+            pushLog(`执行 ${stage} 失败: ${err.message}`, "error");
+        }
     });
 
-    document.getElementById('skillSearch').addEventListener('input', updateSkillOptions);
-    document.getElementById('addSkillBtn').addEventListener('click', addSelectedSkill);
-    skillSelect.addEventListener('change', updateSelectedSkillPreview);
-    skillSelect.addEventListener('dblclick', addSelectedSkill);
-    renderSelectedSkills();
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".tab-btn").forEach(item => item.classList.remove("active"));
+            btn.classList.add("active");
+            state.activeDoc = btn.getAttribute("data-doc");
+            renderArtifacts();
+        });
+    });
 
-    loadLocalizationData(document.getElementById('weapon').value);
+    updateStatusBar();
+    updateProgress();
+    renderArtifacts();
+    renderTimeline();
+    pushLog("页面已就绪，等待创建会话");
 </script>
 </body>
 </html>
