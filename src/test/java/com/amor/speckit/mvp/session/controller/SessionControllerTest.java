@@ -204,6 +204,27 @@ class SessionControllerTest {
                 .andExpect(jsonPath("$.assistantMessage", org.hamcrest.Matchers.containsString("已执行动作 git_status")));
     }
 
+    @Test
+    void shouldAskConfirmationWhenUserRequestsStartCoding() throws Exception {
+        when(aiClient.generateReply(anyString(), anyString(), anyString()))
+                .thenReturn("mock assistant reply");
+
+        MvcResult createResult = mockMvc.perform(post("/api/sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectName\":\"start-coding\",\"objective\":\"build project\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String sessionId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("sessionId").asText();
+
+        mockMvc.perform(post("/api/sessions/{id}/chat", sessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"那就开始搭建一个项目并且开始编码实现吧\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assistantMessage", org.hamcrest.Matchers.containsString("maven_quickstart_scaffold")))
+                .andExpect(jsonPath("$.assistantMessage", org.hamcrest.Matchers.containsString("请回复“确认执行”继续")));
+    }
+
         @Test
         void shouldNotExposeDirectExecuteEndpoint() throws Exception {
                 mockMvc.perform(post("/api/sessions/some-id/execute")

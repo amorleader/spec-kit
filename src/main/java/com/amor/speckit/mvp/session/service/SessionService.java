@@ -159,7 +159,8 @@ public class SessionService {
             throw new IllegalStateException("action requires approval: " + normalizedAction);
         }
 
-        ProcessExecutionResult result = executeAction(sessionId, workspace, normalizedAction, actionSpec);
+        List<String> command = resolveCommand(session, actionSpec.commandTemplate);
+        ProcessExecutionResult result = executeAction(sessionId, workspace, normalizedAction, command);
         String timelineAction = "execute_" + normalizedAction;
         String summary = "source=" + result.source + ", exit=" + result.exitCode;
         addTimeline(sessionId, timelineAction, result.exitCode == 0 ? "success" : "failed", summary);
@@ -352,7 +353,9 @@ public class SessionService {
         try {
             String systemPrompt = "你是企业内部的 AI 编程助手。"
                     + "你需要用中文给出清晰、可执行、面向产品落地的回复。"
-                    + "不要要求用户理解 specify/plan/tasks 等内部步骤，只给业务可理解表达。";
+                + "不要要求用户理解 specify/plan/tasks 等内部步骤，只给业务可理解表达。"
+                + "回复结构固定为三段: 1)实现建议(3条) 2)下一步动作(1-2条命令级建议) 3)风险与校验点。"
+                + "当用户表达开始搭建或开始编码时，明确提示将触发实际执行并请求确认。";
             String context = buildConversationContext(after, internalAction);
             assistantMessage = aiClient.generateReply(systemPrompt, context, normalizedMessage);
             addTimeline(sessionId, "chat", "success", "orchestrated=" + internalAction);
@@ -551,21 +554,21 @@ public class SessionService {
     private ProcessExecutionResult executeAction(String sessionId,
                                                  Path workspace,
                                                  String action,
-                                                 ActionSpec actionSpec) {
+                                                 List<String> command) {
         long timeout = actionTimeoutSeconds > 0 ? actionTimeoutSeconds : DEFAULT_ACTION_TIMEOUT_SECONDS;
         if (openHandsEnabled && openHandsBaseUrl != null && !openHandsBaseUrl.isBlank()) {
             try {
-                return runWithOpenHands(workspace, action, actionSpec, timeout);
+                return runWithOpenHands(workspace, action, command, timeout);
             } catch (RuntimeException ex) {
                 addTimeline(sessionId, "execute_openhands_fallback", "failed", trimLog(ex.getMessage()));
             }
         }
-        return runCommand(workspace, actionSpec.command, timeout);
+        return runCommand(workspace, command, timeout);
     }
 
     private ProcessExecutionResult runWithOpenHands(Path workspace,
                                                     String action,
-                                                    ActionSpec actionSpec,
+                                                    List<String> command,
                                                     long timeoutSeconds) {
         String endpoint = openHandsBaseUrl.endsWith("/")
                 ? openHandsBaseUrl + "api/actions/execute"
@@ -575,7 +578,7 @@ public class SessionService {
                 .put("action", action)
                 .put("workspacePath", workspace.toAbsolutePath().toString())
                 .put("timeoutSeconds", timeoutSeconds)
-                .set("command", objectMapper.valueToTree(actionSpec.command));
+            .set("command", objectMapper.valueToTree(command));
         try {
             HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(endpoint))
@@ -612,9 +615,28 @@ public class SessionService {
         actions.put("maven_version", new ActionSpec("maven_version", List.of("mvn", "-v"), false));
         actions.put("maven_test", new ActionSpec("maven_test", List.of("mvn", "test", "-q"), false));
         actions.put("maven_package_skip_tests", new ActionSpec("maven_package_skip_tests", List.of("mvn", "-q", "-DskipTests", "package"), false));
+        actions.put("maven_quickstart_scaffold", new ActionSpec(
+            "maven_quickstart_scaffold",
+            List.of(
+                "mvn", "-B", "archetype:generate",
+                "-DgroupId=com.example",
+                "-DartifactId={artifactId}",
+                "-DarchetypeArtifactId=maven-archetype-quickstart",
+                "-DarchetypeVersion=1.4",
+                "-DinteractiveMode=false"
+            ),
+            false
+        ));
         actions.put("git_push_origin", new ActionSpec("git_push_origin", List.of("git", "push", "origin", "HEAD"), true));
         return actions;
     }
+
+        private List<String> resolveCommand(SpecKitSession session, List<String> commandTemplate) {
+        String artifactId = toShortName(session.getProjectName());
+        return commandTemplate.stream()
+            .map(token -> token.replace("{artifactId}", artifactId))
+            .collect(Collectors.toList());
+        }
 
     private ActionSpec detectActionIntent(String userMessage) {
         String normalized = userMessage.toLowerCase(Locale.ROOT);
@@ -635,6 +657,16 @@ public class SessionService {
         }
         if (containsAny(normalized, "maven version", "mvn -v", "maven 版本")) {
             return buildActionWhitelist().get("maven_version");
+        }
+        if (containsAny(normalized,
+                "开始搭建",
+                "开始编码",
+                "开始实现",
+                "开始开发",
+                "创建项目",
+                "生成项目骨架",
+                "初始化项目")) {
+            return buildActionWhitelist().get("maven_quickstart_scaffold");
         }
         return null;
     }
@@ -966,12 +998,12 @@ public class SessionService {
 
     private static class ActionSpec {
         private final String action;
-        private final List<String> command;
+        private final List<String> commandTemplate;
         private final boolean requiresApproval;
 
-        private ActionSpec(String action, List<String> command, boolean requiresApproval) {
+        private ActionSpec(String action, List<String> commandTemplate, boolean requiresApproval) {
             this.action = action;
-            this.command = command;
+            this.commandTemplate = commandTemplate;
             this.requiresApproval = requiresApproval;
         }
 
