@@ -375,7 +375,18 @@ public class SessionService {
         String normalizedLower = userMessage.toLowerCase(Locale.ROOT);
         if (isAffirmative(normalizedLower)) {
             pendingActions.remove(session.getSessionId());
-            ExecutionResult execution = runControlledAction(session.getSessionId(), pendingAction.getAction(), true);
+            ExecutionResult execution;
+            try {
+                execution = runControlledAction(session.getSessionId(), pendingAction.getAction(), true);
+            } catch (RuntimeException ex) {
+                String reason = trimLog(ex.getMessage());
+                String failedMessage = "动作执行失败: " + pendingAction.getAction() + "。"
+                        + "\n原因: " + reason
+                        + "\n你可以调整指令后重试，或回复“取消执行”。";
+                addTimeline(session.getSessionId(), "chat_action_confirmed_failed", "failed", reason);
+                appendMilestoneSnapshot(session, "chat_action_confirmed_failed", failedMessage, false);
+                return new ChatResult(session.getSessionId(), session.getStatus(), failedMessage);
+            }
             String executionSummary = "已执行动作 " + execution.getAction()
                     + " (source=" + execution.getSource() + ", exit=" + execution.getExitCode() + ")";
 
