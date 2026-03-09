@@ -2,6 +2,7 @@ package com.amor.speckit.mvp.mhr.exception;
 
 import com.amor.speckit.mvp.mhr.dto.ApiError;
 import com.amor.speckit.mvp.mhr.dto.ErrorDetail;
+import com.amor.speckit.mvp.session.service.SessionPathIsolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -59,6 +60,24 @@ public class GlobalExceptionHandler {
                 )
         );
         return ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT).body(body);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex) {
+        ApiError body = new ApiError("VALIDATION_ERROR", ex.getMessage(), List.of());
+        return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiError> handleIllegalState(IllegalStateException ex) {
+        ApiError body = new ApiError("INVALID_STAGE", ex.getMessage(), List.of());
+        return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(SessionPathIsolationException.class)
+    public ResponseEntity<ApiError> handlePathIsolation(SessionPathIsolationException ex) {
+        ApiError body = new ApiError("PATH_ISOLATION_ERROR", ex.getMessage(), List.of());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     @ExceptionHandler(Exception.class)
