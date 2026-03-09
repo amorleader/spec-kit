@@ -186,6 +186,11 @@ try {
     $hasGit = $false
 }
 
+if ($env:SPECIFY_DISABLE_GIT -eq '1') {
+    $repoRoot = $fallbackRoot
+    $hasGit = $false
+}
+
 Set-Location $repoRoot
 
 $specsDir = Join-Path $repoRoot 'specs'

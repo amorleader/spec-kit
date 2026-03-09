@@ -225,8 +225,11 @@ public class SessionService {
         }
 
         Path specsDir = workspace.resolve("specs");
+        Path gitSentinel = workspace.resolve(".git");
         try {
             Files.createDirectories(specsDir);
+            // Prevent script repo discovery from climbing to parent git repository.
+            Files.createDirectories(gitSentinel);
         } catch (IOException ex) {
             throw new SessionPathIsolationException("Failed to initialize workspace specs directory", ex);
         }
@@ -272,6 +275,8 @@ public class SessionService {
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.directory(workingDirectory.toFile());
+        processBuilder.environment().put("GIT_CEILING_DIRECTORIES", workingDirectory.toAbsolutePath().toString());
+        processBuilder.environment().put("SPECIFY_DISABLE_GIT", "1");
         if (featureBranch != null && !featureBranch.isBlank()) {
             processBuilder.environment().put("SPECIFY_FEATURE", featureBranch);
         }

@@ -2,6 +2,10 @@
 # Common PowerShell functions analogous to common.sh
 
 function Get-RepoRoot {
+    if ($env:SPECIFY_DISABLE_GIT -eq '1') {
+        return (Resolve-Path (Join-Path $PSScriptRoot "../../..")).Path
+    }
+
     try {
         $result = git rev-parse --show-toplevel 2>$null
         if ($LASTEXITCODE -eq 0) {
@@ -59,6 +63,10 @@ function Get-CurrentBranch {
 }
 
 function Test-HasGit {
+    if ($env:SPECIFY_DISABLE_GIT -eq '1') {
+        return $false
+    }
+
     try {
         git rev-parse --show-toplevel 2>$null | Out-Null
         return ($LASTEXITCODE -eq 0)
