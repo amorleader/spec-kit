@@ -6,6 +6,9 @@ server:
   port: 8080
 
 app:
+  spec-kit:
+    session:
+      workspace-root: "/srv/spec-kit/workspaces"
   build-planner:
     max-results-min: 1
     max-results-max: 20
