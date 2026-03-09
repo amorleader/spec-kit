@@ -84,6 +84,28 @@ class HttpAiClientTest {
         assertTrue(ex.getMessage().startsWith("AI request failed with status 500 body="));
     }
 
+    @Test
+    void shouldParseSseStyleResponse() throws IOException {
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/chat/completions", new JsonHandler(200,
+                "data: {\"choices\":[{\"delta\":{\"content\":\"hello \"}}]}\n"
+                        + "data: {\"choices\":[{\"delta\":{\"content\":\"world\"}}]}\n"
+                        + "data: [DONE]\n"));
+        server.start();
+
+        AiProperties properties = new AiProperties();
+        properties.setMode("http");
+        properties.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
+        properties.setApiKey("test-key");
+        properties.setModel("gpt-4o-mini");
+        properties.setTimeoutSeconds(5);
+
+        HttpAiClient client = new HttpAiClient(properties, new ObjectMapper());
+
+        String reply = client.generateReply("sys", "ctx", "msg");
+        assertEquals("hello world", reply);
+    }
+
     private static class JsonHandler implements HttpHandler {
         private final int status;
         private final String body;

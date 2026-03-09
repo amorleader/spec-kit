@@ -15,6 +15,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @ConditionalOnProperty(prefix = "app.ai", name = "mode", havingValue = "http")
@@ -78,17 +80,90 @@ public class HttpAiClient implements AiClient {
                         + response.statusCode() + " body=" + shortBody);
             }
 
-            JsonNode root = objectMapper.readTree(response.body());
-            JsonNode content = root.path("choices").path(0).path("message").path("content");
-            if (content.isMissingNode() || content.asText().isBlank()) {
-                throw new SessionPathIsolationException("AI response does not contain message content");
+            String responseBody = response.body();
+            String parsedContent = tryParseContent(responseBody);
+            if (parsedContent == null || parsedContent.isBlank()) {
+                throw new SessionPathIsolationException("AI response does not contain message content body="
+                        + abbreviate(responseBody));
             }
-            return content.asText();
+            return parsedContent;
         } catch (IOException ex) {
-            throw new SessionPathIsolationException("Failed to parse AI response", ex);
+            throw new SessionPathIsolationException("Failed to parse AI response body="
+                    + abbreviate(ex.getMessage()), ex);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new SessionPathIsolationException("AI request interrupted", ex);
         }
+    }
+
+    private String tryParseContent(String responseBody) throws IOException {
+        if (responseBody == null || responseBody.isBlank()) {
+            return "";
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            String content = extractMessageContent(root);
+            if (!content.isBlank()) {
+                return content;
+            }
+        } catch (IOException ignored) {
+            // Fallback for providers that sometimes return SSE-like chunks.
+        }
+
+        return parseSseLikeBody(responseBody);
+    }
+
+    private String extractMessageContent(JsonNode root) {
+        JsonNode content = root.path("choices").path(0).path("message").path("content");
+        if (!content.isMissingNode() && !content.asText().isBlank()) {
+            return content.asText();
+        }
+
+        JsonNode wrappedContent = root.path("data").path("choices").path(0).path("message").path("content");
+        if (!wrappedContent.isMissingNode() && !wrappedContent.asText().isBlank()) {
+            return wrappedContent.asText();
+        }
+        return "";
+    }
+
+    private String parseSseLikeBody(String responseBody) {
+        List<String> chunks = new ArrayList<>();
+        String[] lines = responseBody.split("\\r?\\n");
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) {
+                continue;
+            }
+            String data = trimmed.substring(5).trim();
+            if (data.isBlank() || "[DONE]".equals(data)) {
+                continue;
+            }
+            try {
+                JsonNode node = objectMapper.readTree(data);
+                String messageContent = extractMessageContent(node);
+                if (!messageContent.isBlank()) {
+                    return messageContent;
+                }
+                JsonNode delta = node.path("choices").path(0).path("delta").path("content");
+                if (!delta.isMissingNode() && !delta.asText().isBlank()) {
+                    chunks.add(delta.asText());
+                }
+            } catch (IOException ignored) {
+                // Keep scanning other SSE lines.
+            }
+        }
+        return String.join("", chunks);
+    }
+
+    private String abbreviate(String text) {
+        if (text == null) {
+            return "";
+        }
+        String normalized = text.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= 280) {
+            return normalized;
+        }
+        return normalized.substring(0, 280) + "...";
     }
 }
