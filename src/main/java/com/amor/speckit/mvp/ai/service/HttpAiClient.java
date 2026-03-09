@@ -52,6 +52,7 @@ public class HttpAiClient implements AiClient {
 
             String payload = objectMapper.createObjectNode()
                     .put("model", aiProperties.getModel())
+                    .put("stream", false)
                     .set("messages", objectMapper.createArrayNode()
                             .add(objectMapper.createObjectNode().put("role", "system").put("content", systemPrompt))
                             .add(objectMapper.createObjectNode().put("role", "user").put("content", conversationContext + "\n\n用户最新输入:\n" + userMessage)))
@@ -61,13 +62,20 @@ public class HttpAiClient implements AiClient {
                     .uri(URI.create(endpoint))
                     .timeout(Duration.ofSeconds(aiProperties.getTimeoutSeconds()))
                     .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
                     .header("Authorization", "Bearer " + aiProperties.getApiKey())
                     .POST(HttpRequest.BodyPublishers.ofString(payload))
                     .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new SessionPathIsolationException("AI request failed with status " + response.statusCode());
+                String body = response.body();
+                String shortBody = body == null ? "" : body.replaceAll("\\s+", " ").trim();
+                if (shortBody.length() > 240) {
+                    shortBody = shortBody.substring(0, 240) + "...";
+                }
+                throw new SessionPathIsolationException("AI request failed with status "
+                        + response.statusCode() + " body=" + shortBody);
             }
 
             JsonNode root = objectMapper.readTree(response.body());

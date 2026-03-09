@@ -15,6 +15,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpAiClientTest {
@@ -80,7 +81,7 @@ class HttpAiClientTest {
 
         SessionPathIsolationException ex = assertThrows(SessionPathIsolationException.class,
                 () -> client.generateReply("sys", "ctx", "msg"));
-        assertEquals("AI request failed with status 500", ex.getMessage());
+        assertTrue(ex.getMessage().startsWith("AI request failed with status 500 body="));
     }
 
     private static class JsonHandler implements HttpHandler {

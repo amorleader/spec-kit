@@ -11,7 +11,7 @@ app:
     base-url: ${APP_AI_BASE_URL:${AI_BASE_URL:}}
     api-key: ${APP_AI_API_KEY:${AI_API_KEY:}}
     model: ${APP_AI_MODEL:${AI_MODEL:gpt-4o-mini}}
-    timeout-seconds: ${APP_AI_TIMEOUT_SECONDS:${AI_TIMEOUT_SECONDS:30}}
+    timeout-seconds: ${APP_AI_TIMEOUT_SECONDS:${AI_TIMEOUT_SECONDS:90}}
     proxy-enabled: ${APP_AI_PROXY_ENABLED:${AI_PROXY_ENABLED:false}}
     proxy-host: ${APP_AI_PROXY_HOST:${AI_PROXY_HOST:127.0.0.1}}
     proxy-port: ${APP_AI_PROXY_PORT:${AI_PROXY_PORT:7890}}

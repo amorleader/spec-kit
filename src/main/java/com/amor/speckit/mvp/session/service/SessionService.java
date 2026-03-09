@@ -237,10 +237,12 @@ public class SessionService {
             assistantMessage = aiClient.generateReply(systemPrompt, context, normalizedMessage);
             addTimeline(sessionId, "chat", "success", "orchestrated=" + internalAction);
         } catch (RuntimeException ex) {
+            String reason = trimLog(ex.getMessage());
             assistantMessage = "已收到你的输入，并完成内部推进。\n"
                     + "当前内部状态: " + after.getStatus() + "\n"
-                    + "AI 回复生成暂时失败，请重试一次。";
-            addTimeline(sessionId, "chat_ai_failed", "failed", trimLog(ex.getMessage()));
+                + "AI 回复生成暂时失败，请重试一次。\n"
+                + "失败原因: " + reason;
+            addTimeline(sessionId, "chat_ai_failed", "failed", reason);
         }
         return new ChatResult(after.getSessionId(), after.getStatus(), assistantMessage);
     }
