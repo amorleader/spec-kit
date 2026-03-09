@@ -6,6 +6,15 @@ server:
   port: 8080
 
 app:
+  ai:
+    mode: "mock"
+    base-url: ""
+    api-key: ""
+    model: "gpt-4o-mini"
+    timeout-seconds: 30
+    proxy-enabled: false
+    proxy-host: "127.0.0.1"
+    proxy-port: 7890
   spec-kit:
     session:
       workspace-root: "/srv/spec-kit/workspaces"

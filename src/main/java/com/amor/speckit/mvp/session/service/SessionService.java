@@ -1,5 +1,6 @@
 package com.amor.speckit.mvp.session.service;
 
+import com.amor.speckit.mvp.ai.service.AiClient;
 import com.amor.speckit.mvp.mhr.exception.NotFoundException;
 import com.amor.speckit.mvp.session.domain.SessionStatus;
 import com.amor.speckit.mvp.session.domain.SpecKitSession;
@@ -33,13 +34,16 @@ public class SessionService {
 
     private final SessionWorkspaceManager sessionWorkspaceManager;
     private final ObjectMapper objectMapper;
+    private final AiClient aiClient;
     private final Map<String, SpecKitSession> sessions = new ConcurrentHashMap<>();
     private final Map<String, List<TimelineEvent>> timelines = new ConcurrentHashMap<>();
 
     public SessionService(SessionWorkspaceManager sessionWorkspaceManager,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          AiClient aiClient) {
         this.sessionWorkspaceManager = sessionWorkspaceManager;
         this.objectMapper = objectMapper;
+        this.aiClient = aiClient;
     }
 
     public SpecKitSession createSession(String projectName, String objective) {
@@ -224,8 +228,20 @@ public class SessionService {
             after = runTasks(sessionId, normalizedMessage);
         }
 
-        String assistantMessage = buildAssistantMessage(after, internalAction);
-        addTimeline(sessionId, "chat", "success", "orchestrated=" + internalAction);
+        String assistantMessage;
+        try {
+            String systemPrompt = "你是企业内部的 AI 编程助手。"
+                    + "你需要用中文给出清晰、可执行、面向产品落地的回复。"
+                    + "不要要求用户理解 specify/plan/tasks 等内部步骤，只给业务可理解表达。";
+            String context = buildConversationContext(after, internalAction);
+            assistantMessage = aiClient.generateReply(systemPrompt, context, normalizedMessage);
+            addTimeline(sessionId, "chat", "success", "orchestrated=" + internalAction);
+        } catch (RuntimeException ex) {
+            assistantMessage = "已收到你的输入，并完成内部推进。\n"
+                    + "当前内部状态: " + after.getStatus() + "\n"
+                    + "AI 回复生成暂时失败，请重试一次。";
+            addTimeline(sessionId, "chat_ai_failed", "failed", trimLog(ex.getMessage()));
+        }
         return new ChatResult(after.getSessionId(), after.getStatus(), assistantMessage);
     }
 
@@ -482,6 +498,28 @@ public class SessionService {
                 + "当前状态: " + session.getStatus()
                 + "\n"
                 + nextHint;
+    }
+
+    private String buildConversationContext(SpecKitSession session, String internalAction) {
+        SessionArtifacts artifacts = getArtifacts(session.getSessionId());
+        return "项目名: " + session.getProjectName() + "\n"
+                + "目标: " + session.getObjective() + "\n"
+                + "内部动作: " + internalAction + "\n"
+                + "当前状态: " + session.getStatus() + "\n"
+                + "spec.md 摘要:\n" + summarize(artifacts.getSpecMd()) + "\n"
+                + "plan.md 摘要:\n" + summarize(artifacts.getPlanMd()) + "\n"
+                + "tasks.md 摘要:\n" + summarize(artifacts.getTasksMd());
+    }
+
+    private String summarize(String text) {
+        if (text == null || text.isBlank()) {
+            return "(空)";
+        }
+        String normalized = text.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= 500) {
+            return normalized;
+        }
+        return normalized.substring(0, 500) + "...";
     }
 
     private String toShortName(String projectName) {

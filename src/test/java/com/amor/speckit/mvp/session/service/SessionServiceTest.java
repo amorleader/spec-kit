@@ -3,6 +3,7 @@ package com.amor.speckit.mvp.session.service;
 import com.amor.speckit.mvp.session.config.SessionProperties;
 import com.amor.speckit.mvp.session.domain.SessionStatus;
 import com.amor.speckit.mvp.session.domain.SpecKitSession;
+import com.amor.speckit.mvp.ai.service.MockAiClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -29,7 +30,7 @@ class SessionServiceTest {
                 properties,
                 new SessionPathValidator()
         );
-        SessionService sessionService = new SessionService(workspaceManager, new ObjectMapper());
+        SessionService sessionService = new SessionService(workspaceManager, new ObjectMapper(), new MockAiClient());
 
         SpecKitSession session = sessionService.createSession("spec-kit-poc", "deliver mvp");
 

@@ -1,11 +1,13 @@
 package com.amor.speckit.mvp.session.controller;
 
+import com.amor.speckit.mvp.ai.service.AiClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -14,6 +16,10 @@ import com.amor.speckit.mvp.mhr.MhrBuildPlannerApplication;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.emptyOrNullString;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,8 +38,13 @@ class SessionControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+        @MockBean
+        private AiClient aiClient;
+
     @Test
     void shouldCreateSession() throws Exception {
+        when(aiClient.generateReply(anyString(), anyString(), anyString()))
+                .thenReturn("mock assistant reply");
         String body = "{\"projectName\":\"spec-kit-poc\",\"objective\":\"build mvp\"}";
 
         mockMvc.perform(post("/api/sessions")
@@ -47,6 +58,8 @@ class SessionControllerTest {
 
     @Test
     void shouldRunSpecifyPlanTasksAndReadArtifacts() throws Exception {
+        when(aiClient.generateReply(anyString(), anyString(), anyString()))
+                .thenReturn("mock assistant reply");
         String createBody = "{\"projectName\":\"spec-kit-poc\",\"objective\":\"build mvp\"}";
 
         MvcResult createResult = mockMvc.perform(post("/api/sessions")
@@ -86,6 +99,8 @@ class SessionControllerTest {
 
     @Test
     void shouldAutoOrchestrateStagesViaChatApi() throws Exception {
+        when(aiClient.generateReply(anyString(), anyString(), anyString()))
+                .thenReturn("mock assistant reply");
         String createBody = "{\"projectName\":\"chat-poc\",\"objective\":\"chat first workflow\"}";
 
         MvcResult createResult = mockMvc.perform(post("/api/sessions")
@@ -121,5 +136,27 @@ class SessionControllerTest {
                 .andExpect(jsonPath("$.specMd", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.planMd", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.tasksMd", not(emptyOrNullString())));
+    }
+
+    @Test
+    void shouldFallbackWhenAiClientFails() throws Exception {
+        reset(aiClient);
+        doThrow(new RuntimeException("ai timeout")).when(aiClient)
+                .generateReply(anyString(), anyString(), anyString());
+
+        MvcResult createResult = mockMvc.perform(post("/api/sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectName\":\"fallback-poc\",\"objective\":\"verify fallback\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String sessionId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("sessionId").asText();
+
+        mockMvc.perform(post("/api/sessions/{id}/chat", sessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"请生成方案\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assistantMessage", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.assistantMessage").value(org.hamcrest.Matchers.containsString("AI 回复生成暂时失败")));
     }
 }
