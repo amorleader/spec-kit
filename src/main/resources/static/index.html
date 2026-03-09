@@ -3,52 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>spec-kit PoC Console</title>
+    <title>spec-kit Execution Console</title>
     <style>
         :root {
-            --bg-1: #0b1218;
-            --bg-2: #18232d;
-            --panel: #0f1b24cc;
-            --line: #35566b;
-            --text: #e7f2fb;
-            --muted: #9db6c7;
-            --accent: #3dd598;
-            --warn: #ffb34d;
-            --error: #ff5d73;
-            --done: #37c3ff;
+            --bg-1: #07111a;
+            --bg-2: #162835;
+            --panel: #0f1c26e0;
+            --line: #3f6279;
+            --text: #e9f4ff;
+            --muted: #95b2c7;
+            --accent: #48d6b0;
+            --warn: #ffc067;
+            --error: #ff6f82;
         }
 
         * { box-sizing: border-box; }
 
         body {
             margin: 0;
-            min-height: 100vh;
             color: var(--text);
             font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
             background:
-                radial-gradient(circle at 10% 8%, #2c7da040 0, transparent 28%),
-                radial-gradient(circle at 88% 12%, #3dd59833 0, transparent 30%),
+                radial-gradient(circle at 12% 8%, #2684b742 0, transparent 30%),
+                radial-gradient(circle at 84% 12%, #3edfa63b 0, transparent 28%),
                 linear-gradient(160deg, var(--bg-1), var(--bg-2));
+            min-height: 100vh;
         }
 
         .app {
-            max-width: 1280px;
+            max-width: 1360px;
             margin: 0 auto;
-            padding: 24px 14px 28px;
+            padding: 20px 14px 24px;
         }
 
         .hero {
-            padding: 14px 16px;
-            border: 1px solid #3f697f;
+            border: 1px solid #406a7f;
             border-radius: 14px;
-            background: linear-gradient(110deg, #0f2734ba, #14202b90);
-            box-shadow: 0 16px 40px #00000040;
+            padding: 14px 16px;
+            background: linear-gradient(108deg, #0d2838cc, #1726329c);
         }
 
         .hero h1 {
             margin: 0;
-            letter-spacing: 0.4px;
-            font-size: 1.32rem;
+            font-size: 1.28rem;
         }
 
         .hero p {
@@ -58,7 +55,7 @@
         }
 
         .layout {
-            margin-top: 14px;
+            margin-top: 12px;
             display: grid;
             gap: 12px;
             grid-template-columns: 1fr;
@@ -68,8 +65,7 @@
             border: 1px solid var(--line);
             border-radius: 12px;
             background: var(--panel);
-            backdrop-filter: blur(4px);
-            box-shadow: 0 12px 26px #00000033;
+            box-shadow: 0 12px 24px #00000033;
             padding: 12px;
         }
 
@@ -84,173 +80,158 @@
 
         .field label {
             display: block;
-            margin-bottom: 4px;
             color: var(--muted);
-            font-size: 0.83rem;
+            margin-bottom: 4px;
+            font-size: 0.82rem;
         }
 
         .field input,
-        .field select,
         .composer textarea,
-        .composer button {
+        button {
             width: 100%;
             border-radius: 8px;
-            border: 1px solid #42657b;
+            border: 1px solid #476c80;
+            background: #0b1821;
             color: var(--text);
-            background: #0c1a23;
             padding: 10px;
             font: inherit;
         }
 
         .field input:focus,
-        .field select:focus,
         .composer textarea:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 2px #3dd59830;
         }
 
-        .btn-row {
-            display: grid;
-            gap: 8px;
-            grid-template-columns: 1fr;
-        }
-
         button {
             cursor: pointer;
-            transition: transform 0.16s ease, background 0.2s ease;
+            transition: transform 0.14s ease;
         }
 
         button:hover {
             transform: translateY(-1px);
-            background: #102734;
-        }
-
-        .create-btn {
-            border-color: #45bfeb;
-            background: #0f2734;
-        }
-
-        .composer textarea {
-            resize: vertical;
-            min-height: 96px;
-        }
-
-        .composer-footer {
-            margin-top: 8px;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 8px;
         }
 
         .status-line {
-            margin-top: 8px;
             color: var(--muted);
             font-size: 0.82rem;
             word-break: break-all;
+            margin-top: 8px;
         }
 
-        .progress {
-            display: grid;
-            gap: 8px;
-            grid-template-columns: repeat(3, 1fr);
-        }
-
-        .stage {
-            padding: 10px;
+        .workspace-box {
+            border: 1px solid #3d5f72;
             border-radius: 8px;
-            border: 1px solid #446176;
-            background: #0f1d27;
-            text-align: center;
-            font-size: 0.83rem;
-            color: var(--muted);
-        }
-
-        .stage.done {
-            color: #001a24;
-            border-color: #63d8ff;
-            background: linear-gradient(140deg, #3bc7ff, #84f0ff);
-        }
-
-        .tabs {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-
-        .tab-btn.active {
-            border-color: #5dddb5;
-            background: #12302a;
-            color: #b8f6df;
-        }
-
-        pre {
-            margin: 0;
-            min-height: 260px;
-            max-height: 430px;
+            background: #08141c;
+            min-height: 420px;
+            max-height: 640px;
             overflow: auto;
+            padding: 10px;
+        }
+
+        .workspace-empty {
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .entry {
+            font-size: 0.82rem;
+            line-height: 1.55;
+            white-space: pre;
+        }
+
+        .entry.dir { color: #84e9ff; }
+        .entry.file { color: #d7e9f6; }
+
+        .chat-stream {
+            border: 1px dashed #4a6d7f;
             border-radius: 8px;
-            border: 1px solid #3d5f73;
             background: #08131a;
-            color: #c5e7ff;
-            padding: 12px;
+            min-height: 380px;
+            max-height: 540px;
+            overflow: auto;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .chat-line {
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            line-height: 1.55;
             white-space: pre-wrap;
             word-break: break-word;
+        }
+
+        .chat-line.system { color: #8db7cf; }
+        .chat-line.user { color: #ffd993; }
+        .chat-line.assistant { color: #c6f8e6; }
+        .chat-line.warn { color: var(--warn); }
+        .chat-line.error { color: var(--error); }
+
+        .composer textarea {
+            min-height: 130px;
+            resize: vertical;
+        }
+
+        .composer button {
+            margin-top: 8px;
+        }
+
+        .milestone {
+            margin-top: 10px;
+            border: 1px solid #3d5f72;
+            border-radius: 8px;
+            background: #08131a;
+            max-height: 150px;
+            overflow: auto;
+            padding: 8px;
+            color: var(--muted);
+            font-size: 0.78rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: #00000088;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+        }
+
+        .modal.open { display: flex; }
+
+        .modal-card {
+            width: min(560px, 100%);
+            border: 1px solid #4b6f82;
+            border-radius: 12px;
+            background: #0d1f2be8;
+            padding: 14px;
+        }
+
+        .modal-card h3 {
+            margin: 0 0 8px;
+        }
+
+        .modal-card p {
+            margin: 0 0 10px;
+            color: var(--muted);
+            font-size: 0.86rem;
             line-height: 1.5;
         }
 
-        .timeline {
+        .modal-actions {
             display: grid;
-            gap: 7px;
-            max-height: 250px;
-            overflow: auto;
-        }
-
-        .event {
-            border: 1px solid #3a5d70;
-            border-radius: 7px;
-            background: #0d1d27;
-            padding: 7px;
-            font-size: 0.8rem;
-        }
-
-        .event .meta {
-            display: flex;
-            justify-content: space-between;
-            color: var(--muted);
-            margin-bottom: 3px;
             gap: 8px;
+            grid-template-columns: 1fr 1fr;
         }
 
-        .event .ok { color: var(--accent); }
-        .event .fail { color: var(--error); }
-
-        .console {
-            margin-top: 8px;
-            border: 1px dashed #47687b;
-            border-radius: 8px;
-            background: #0b1620;
-            padding: 8px;
-            max-height: 170px;
-            overflow: auto;
-            font-size: 0.8rem;
-            color: #a5c0d3;
-        }
-
-        .console div { margin-bottom: 4px; }
-
-        .warn { color: var(--warn); }
-        .error { color: var(--error); }
-
-        @media (min-width: 980px) {
+        @media (min-width: 1060px) {
             .layout {
-                grid-template-columns: 360px 1fr;
-            }
-            .right-grid {
-                display: grid;
-                gap: 12px;
-                grid-template-rows: auto 1fr;
+                grid-template-columns: 34% 66%;
             }
         }
     </style>
@@ -258,58 +239,51 @@
 <body>
 <div class="app">
     <section class="hero">
-        <h1>spec-kit Workflow Console</h1>
-        <p>输入你的想法，系统会在后台自动推进分析、方案和任务，并持续更新文档。</p>
+        <h1>spec-kit Delivery Console</h1>
+        <p>左侧实时展示服务器工作区文件结构，右侧通过会话推进项目执行。</p>
     </section>
 
     <div class="layout">
         <section class="panel">
-            <h2>会话控制台</h2>
+            <h2>工作区文件树</h2>
+            <div class="status-line" id="workspaceStatus">尚未绑定会话</div>
+            <div class="workspace-box" id="workspaceTree">
+                <div class="workspace-empty">创建或恢复会话后展示服务器真实目录结构。</div>
+            </div>
+            <div class="milestone" id="milestoneView">里程碑文本将在这里显示（按 sessionId 关联）。</div>
+        </section>
+
+        <section class="panel">
+            <h2>会话对话框</h2>
             <div class="field">
                 <label for="projectName">项目名</label>
-                <input id="projectName" type="text" value="spec-kit-poc" placeholder="例如: cost-optimizer"/>
+                <input id="projectName" type="text" value="spec-kit-poc" placeholder="例如: cloud-storage-service"/>
             </div>
             <div class="field">
                 <label for="objective">目标</label>
-                <input id="objective" type="text" value="搭建可视化 spec-kit PoC" placeholder="一句话目标"/>
+                <input id="objective" type="text" value="搭建可视化 spec-kit PoC" placeholder="一句话描述要做什么"/>
             </div>
-            <div class="btn-row">
-                <button class="create-btn" id="createSessionBtn" type="button">新建会话</button>
-            </div>
+            <button id="createSessionBtn" type="button">新建项目会话</button>
             <div class="status-line" id="sessionStatusLine">尚未创建会话</div>
 
-            <div class="composer" style="margin-top: 10px;">
-                <textarea id="chatInput" placeholder="输入本轮增量需求，例如：补充验收标准并补充风险清单"></textarea>
-                <div class="composer-footer">
-                    <button id="sendBtn" type="button">发送</button>
-                </div>
-            </div>
+            <div class="chat-stream" id="chatStream"></div>
 
-            <div class="console" id="chatStream"></div>
-        </section>
-
-        <section class="right-grid">
-            <div class="panel">
-                <h2>项目推进看板</h2>
-                <div class="progress">
-                    <div class="stage" id="stage-spec">需求理解</div>
-                    <div class="stage" id="stage-plan">方案设计</div>
-                    <div class="stage" id="stage-tasks">任务落地</div>
-                </div>
-                <h2 style="margin-top: 12px;">Timeline</h2>
-                <div class="timeline" id="timeline"></div>
-            </div>
-
-            <div class="panel">
-                <h2>文档查看区</h2>
-                <div class="tabs">
-                    <button class="tab-btn active" type="button" data-doc="spec">spec.md</button>
-                    <button class="tab-btn" type="button" data-doc="plan">plan.md</button>
-                    <button class="tab-btn" type="button" data-doc="tasks">tasks.md</button>
-                </div>
-                <pre id="artifactView">会话创建后可查看文档内容</pre>
+            <div class="composer">
+                <textarea id="chatInput" placeholder="输入需求，例如：先初始化 Maven 工程并创建基础目录"></textarea>
+                <button id="sendBtn" type="button">发送</button>
             </div>
         </section>
+    </div>
+</div>
+
+<div class="modal" id="startupModal">
+    <div class="modal-card">
+        <h3>继续上次项目？</h3>
+        <p id="resumeHint">正在检查上次会话...</p>
+        <div class="modal-actions">
+            <button id="resumeBtn" type="button">继续上次项目</button>
+            <button id="newBtn" type="button">新建项目</button>
+        </div>
     </div>
 </div>
 
@@ -317,82 +291,17 @@
     const state = {
         sessionId: null,
         status: "CREATED",
-        activeDoc: "spec",
-        artifacts: {
-            specMd: "",
-            planMd: "",
-            tasksMd: "",
-            timeline: []
-        }
+        workspacePath: "",
+        latest: null
     };
 
-    const stageMap = {
-        CREATED: 0,
-        SPECIFIED: 1,
-        PLANNED: 2,
-        TASKS_GENERATED: 3
-    };
-
-    const stageEl = {
-        spec: document.getElementById("stage-spec"),
-        plan: document.getElementById("stage-plan"),
-        tasks: document.getElementById("stage-tasks")
-    };
-
-    function appendChat(role, message, level) {
+    function appendChat(role, message, extraClass) {
         const box = document.getElementById("chatStream");
         const line = document.createElement("div");
+        line.className = "chat-line " + role + (extraClass ? " " + extraClass : "");
         line.textContent = `${role}: ${message}`;
-        if (level) {
-            line.classList.add(level);
-        }
         box.appendChild(line);
         box.scrollTop = box.scrollHeight;
-    }
-
-    function updateStatusBar(maskedPath) {
-        const label = document.getElementById("sessionStatusLine");
-        if (!state.sessionId) {
-            label.textContent = "尚未创建会话";
-            return;
-        }
-        label.textContent = `sessionId=${state.sessionId} | status=${state.status} | workspace=${maskedPath || "***"}`;
-    }
-
-    function updateProgress() {
-        const rank = stageMap[state.status] || 0;
-        stageEl.spec.classList.toggle("done", rank >= 1);
-        stageEl.plan.classList.toggle("done", rank >= 2);
-        stageEl.tasks.classList.toggle("done", rank >= 3);
-    }
-
-    function renderArtifacts() {
-        const view = document.getElementById("artifactView");
-        const map = {
-            spec: state.artifacts.specMd,
-            plan: state.artifacts.planMd,
-            tasks: state.artifacts.tasksMd
-        };
-        const value = map[state.activeDoc];
-        view.textContent = value || "当前文档为空";
-    }
-
-    function renderTimeline() {
-        const box = document.getElementById("timeline");
-        box.innerHTML = "";
-        if (!state.artifacts.timeline || state.artifacts.timeline.length === 0) {
-            box.textContent = "暂无 timeline 记录";
-            return;
-        }
-
-        state.artifacts.timeline.slice().reverse().forEach(event => {
-            const item = document.createElement("div");
-            item.className = "event";
-            const ok = event.result === "success";
-            item.innerHTML = `<div class="meta"><span>${event.action}</span><span>${new Date(event.time).toLocaleString()}</span></div>`
-                + `<div class="${ok ? "ok" : "fail"}">${event.result}${event.error ? " | " + event.error : ""}</div>`;
-            box.appendChild(item);
-        });
     }
 
     async function callApi(url, method, body) {
@@ -401,85 +310,168 @@
             headers: {"Content-Type": "application/json"},
             body: body ? JSON.stringify(body) : undefined
         });
-
-        const payload = await resp.json().catch(() => ({}));
+        const payload = await resp.json().catch(() => null);
         if (!resp.ok) {
-            const msg = payload.message || `HTTP ${resp.status}`;
+            const msg = payload && payload.message ? payload.message : `HTTP ${resp.status}`;
             throw new Error(msg);
         }
         return payload;
     }
 
-    async function refreshArtifacts() {
+    function updateStatus() {
+        const line = document.getElementById("sessionStatusLine");
+        const ws = document.getElementById("workspaceStatus");
+        if (!state.sessionId) {
+            line.textContent = "尚未创建会话";
+            ws.textContent = "尚未绑定会话";
+            return;
+        }
+        line.textContent = `sessionId=${state.sessionId} | status=${state.status}`;
+        ws.textContent = `workspace=${state.workspacePath || "***"}`;
+    }
+
+    function renderTree(entries) {
+        const box = document.getElementById("workspaceTree");
+        box.innerHTML = "";
+        if (!entries || entries.length === 0) {
+            box.innerHTML = '<div class="workspace-empty">当前工作区暂无文件。</div>';
+            return;
+        }
+        entries.forEach(item => {
+            const line = document.createElement("div");
+            line.className = "entry " + (item.directory ? "dir" : "file");
+            const indent = "  ".repeat(Math.max(0, item.depth - 1));
+            const marker = item.directory ? "[D] " : "[F] ";
+            line.textContent = indent + marker + item.path;
+            box.appendChild(line);
+        });
+    }
+
+    async function refreshWorkspace() {
         if (!state.sessionId) {
             return;
         }
-        const data = await callApi(`/api/sessions/${encodeURIComponent(state.sessionId)}/artifacts`, "GET");
-        state.artifacts = data;
-        renderArtifacts();
-        renderTimeline();
+        const tree = await callApi(`/api/sessions/${encodeURIComponent(state.sessionId)}/workspace-tree`, "GET");
+        renderTree(tree.entries || []);
+    }
+
+    async function refreshMilestone() {
+        if (!state.sessionId) {
+            return;
+        }
+        const payload = await callApi(`/api/sessions/${encodeURIComponent(state.sessionId)}/milestone`, "GET");
+        document.getElementById("milestoneView").textContent = payload.text || "当前会话暂无里程碑文本。";
+    }
+
+    async function hydrateSession(session) {
+        state.sessionId = session.sessionId;
+        state.status = session.status;
+        state.workspacePath = session.workspacePath;
+        document.getElementById("projectName").value = session.projectName || "";
+        document.getElementById("objective").value = session.objective || "";
+        localStorage.setItem("speckit.lastSessionId", session.sessionId);
+        updateStatus();
+        await refreshWorkspace();
+        await refreshMilestone();
+    }
+
+    async function createSession() {
+        const projectName = document.getElementById("projectName").value.trim();
+        const objective = document.getElementById("objective").value.trim();
+        const data = await callApi("/api/sessions", "POST", {projectName, objective});
+        await hydrateSession({
+            sessionId: data.sessionId,
+            projectName,
+            objective,
+            status: data.status,
+            workspacePath: data.workspacePath
+        });
+        document.getElementById("chatStream").innerHTML = "";
+        appendChat("system", `会话创建成功: ${state.sessionId}`);
+    }
+
+    async function sendChat() {
+        if (!state.sessionId) {
+            appendChat("system", "请先创建或恢复会话", "warn");
+            return;
+        }
+        const input = document.getElementById("chatInput").value.trim();
+        if (!input) {
+            appendChat("system", "请输入需求", "warn");
+            return;
+        }
+        appendChat("user", input);
+        const data = await callApi(`/api/sessions/${encodeURIComponent(state.sessionId)}/chat`, "POST", {message: input});
+        state.status = data.status;
+        updateStatus();
+        appendChat("assistant", data.assistantMessage);
+        document.getElementById("chatInput").value = "";
+        await refreshWorkspace();
+        await refreshMilestone();
+    }
+
+    async function loadStartupChoice() {
+        const modal = document.getElementById("startupModal");
+        const hint = document.getElementById("resumeHint");
+        const resumeBtn = document.getElementById("resumeBtn");
+        const newBtn = document.getElementById("newBtn");
+
+        let latest = null;
+        const lastId = localStorage.getItem("speckit.lastSessionId");
+        if (lastId) {
+            try {
+                latest = await callApi(`/api/sessions/${encodeURIComponent(lastId)}`, "GET");
+            } catch (e) {
+                latest = null;
+            }
+        }
+        if (!latest) {
+            latest = await callApi("/api/sessions/latest", "GET");
+        }
+
+        if (!latest || !latest.sessionId) {
+            modal.classList.remove("open");
+            appendChat("system", "未发现可恢复会话，请创建新项目会话。", "warn");
+            return;
+        }
+
+        state.latest = latest;
+        hint.textContent = `上次会话: ${latest.projectName} | ${latest.status} | ${new Date(latest.createdAt).toLocaleString()}`;
+        modal.classList.add("open");
+
+        resumeBtn.onclick = async () => {
+            modal.classList.remove("open");
+            await hydrateSession(latest);
+            appendChat("system", `已恢复会话: ${latest.sessionId}`);
+        };
+
+        newBtn.onclick = () => {
+            modal.classList.remove("open");
+            appendChat("system", "已选择新建项目，请填写项目信息后点击新建。", "warn");
+        };
     }
 
     document.getElementById("createSessionBtn").addEventListener("click", async () => {
-        const projectName = document.getElementById("projectName").value.trim();
-        const objective = document.getElementById("objective").value.trim();
-
         try {
-            const data = await callApi("/api/sessions", "POST", { projectName, objective });
-            state.sessionId = data.sessionId;
-            state.status = data.status;
-            state.artifacts = { specMd: "", planMd: "", tasksMd: "", timeline: [] };
-            updateStatusBar(data.workspacePath);
-            updateProgress();
-            renderArtifacts();
-            renderTimeline();
-            document.getElementById("chatStream").innerHTML = "";
-            appendChat("system", `会话创建成功: ${state.sessionId}`);
+            await createSession();
         } catch (err) {
             appendChat("system", `会话创建失败: ${err.message}`, "error");
         }
     });
 
     document.getElementById("sendBtn").addEventListener("click", async () => {
-        if (!state.sessionId) {
-            appendChat("system", "请先创建会话", "warn");
-            return;
-        }
-
-        const input = document.getElementById("chatInput").value.trim();
-        if (!input) {
-            appendChat("system", "请输入本轮需求", "warn");
-            return;
-        }
-
-        appendChat("user", input);
         try {
-            const data = await callApi(`/api/sessions/${encodeURIComponent(state.sessionId)}/chat`, "POST", { message: input });
-            state.status = data.status;
-            updateStatusBar();
-            updateProgress();
-            await refreshArtifacts();
-            appendChat("assistant", data.assistantMessage);
-            document.getElementById("chatInput").value = "";
+            await sendChat();
         } catch (err) {
             appendChat("assistant", `处理失败: ${err.message}`, "error");
         }
     });
 
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            document.querySelectorAll(".tab-btn").forEach(item => item.classList.remove("active"));
-            btn.classList.add("active");
-            state.activeDoc = btn.getAttribute("data-doc");
-            renderArtifacts();
-        });
+    updateStatus();
+    appendChat("system", "页面已就绪。");
+    loadStartupChoice().catch(err => {
+        appendChat("system", `初始化失败: ${err.message}`, "error");
     });
-
-    updateStatusBar();
-    updateProgress();
-    renderArtifacts();
-    renderTimeline();
-    appendChat("system", "页面已就绪，等待创建会话");
 </script>
 </body>
 </html>

@@ -54,6 +54,11 @@ class SessionControllerTest {
                 .andExpect(jsonPath("$.sessionId", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.status").value("CREATED"))
                 .andExpect(jsonPath("$.workspacePath").value(org.hamcrest.Matchers.startsWith("***/")));
+
+        mockMvc.perform(get("/api/sessions/latest"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionId", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.projectName").value("spec-kit-poc"));
     }
 
     @Test
@@ -136,6 +141,19 @@ class SessionControllerTest {
                 .andExpect(jsonPath("$.specMd", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.planMd", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.tasksMd", not(emptyOrNullString())));
+
+        mockMvc.perform(get("/api/sessions/{id}", sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.status").value("TASKS_GENERATED"));
+
+        mockMvc.perform(get("/api/sessions/{id}/workspace-tree", sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.entries").isArray());
+
+        mockMvc.perform(get("/api/sessions/{id}/milestone", sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.text", not(emptyOrNullString())));
     }
 
     @Test

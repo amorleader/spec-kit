@@ -5,10 +5,14 @@ import com.amor.speckit.mvp.session.dto.ChatRequest;
 import com.amor.speckit.mvp.session.dto.ChatResponse;
 import com.amor.speckit.mvp.session.dto.CreateSessionRequest;
 import com.amor.speckit.mvp.session.dto.CreateSessionResponse;
+import com.amor.speckit.mvp.session.dto.MilestoneResponse;
 import com.amor.speckit.mvp.session.dto.SessionArtifactsResponse;
+import com.amor.speckit.mvp.session.dto.SessionSummaryResponse;
 import com.amor.speckit.mvp.session.dto.StageActionRequest;
 import com.amor.speckit.mvp.session.dto.StageActionResponse;
 import com.amor.speckit.mvp.session.dto.TimelineEntryResponse;
+import com.amor.speckit.mvp.session.dto.WorkspaceEntryResponse;
+import com.amor.speckit.mvp.session.dto.WorkspaceTreeResponse;
 import com.amor.speckit.mvp.session.service.SessionService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -40,6 +45,20 @@ public class SessionController {
                 session.getStatus(),
                 maskWorkspacePath(session.getWorkspacePath(), session.getSessionId())
         );
+    }
+
+    @GetMapping("/latest")
+    public SessionSummaryResponse latest() {
+        Optional<SessionService.SessionSummary> latest = sessionService.getLatestSessionSummary();
+        if (latest.isEmpty()) {
+            return null;
+        }
+        return toSummary(latest.get());
+    }
+
+    @GetMapping("/{id}")
+    public SessionSummaryResponse summary(@PathVariable("id") String sessionId) {
+        return toSummary(sessionService.getSessionSummary(sessionId));
     }
 
     @PostMapping("/{id}/specify")
@@ -87,6 +106,30 @@ public class SessionController {
                 artifacts.getPlanMd(),
                 artifacts.getTasksMd(),
                 timeline
+        );
+    }
+
+    @GetMapping("/{id}/workspace-tree")
+    public WorkspaceTreeResponse workspaceTree(@PathVariable("id") String sessionId) {
+        List<WorkspaceEntryResponse> entries = sessionService.listWorkspaceEntries(sessionId).stream()
+                .map(entry -> new WorkspaceEntryResponse(entry.getPath(), entry.isDirectory(), entry.getDepth()))
+                .collect(Collectors.toList());
+        return new WorkspaceTreeResponse(entries);
+    }
+
+    @GetMapping("/{id}/milestone")
+    public MilestoneResponse milestone(@PathVariable("id") String sessionId) {
+        return new MilestoneResponse(sessionService.readMilestone(sessionId));
+    }
+
+    private SessionSummaryResponse toSummary(SessionService.SessionSummary summary) {
+        return new SessionSummaryResponse(
+                summary.getSessionId(),
+                summary.getProjectName(),
+                summary.getObjective(),
+                summary.getStatus(),
+                maskWorkspacePath(summary.getWorkspacePath(), summary.getSessionId()),
+                summary.getCreatedAt()
         );
     }
 

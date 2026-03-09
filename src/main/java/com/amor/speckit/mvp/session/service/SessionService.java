@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 public class SessionService {
     private static final String SCRIPT_ROOT = ".specify/scripts/powershell";
     private static final String TEMPLATE_ROOT = ".specify/templates";
+    private static final String MILESTONE_PATH = ".spec-kit/milestone.md";
 
     private final SessionWorkspaceManager sessionWorkspaceManager;
     private final ObjectMapper objectMapper;
@@ -69,11 +70,51 @@ public class SessionService {
         sessions.put(sessionId, session);
         timelines.put(sessionId, new CopyOnWriteArrayList<>());
         addTimeline(sessionId, "create_session", "success", null);
+        appendMilestoneSnapshot(session, "create_session", "会话已创建，等待用户输入需求。", true);
         return session;
     }
 
     public Optional<SpecKitSession> getSession(String sessionId) {
         return Optional.ofNullable(sessions.get(sessionId));
+    }
+
+    public Optional<SessionSummary> getLatestSessionSummary() {
+        return sessions.values().stream()
+                .sorted((left, right) -> right.getCreatedAt().compareTo(left.getCreatedAt()))
+                .map(this::toSummary)
+                .findFirst();
+    }
+
+    public SessionSummary getSessionSummary(String sessionId) {
+        return toSummary(requireSession(sessionId));
+    }
+
+    public List<WorkspaceEntry> listWorkspaceEntries(String sessionId) {
+        SpecKitSession session = requireSession(sessionId);
+        Path workspace = Path.of(session.getWorkspacePath()).normalize();
+        try (Stream<Path> stream = Files.walk(workspace, 8)) {
+            return stream
+                    .filter(path -> !path.equals(workspace))
+                    .filter(path -> !path.toString().contains(".git"))
+                    .map(path -> toWorkspaceEntry(workspace, path))
+                    .sorted((a, b) -> a.getPath().compareToIgnoreCase(b.getPath()))
+                    .collect(Collectors.toList());
+        } catch (IOException ex) {
+            throw new SessionPathIsolationException("Failed to list workspace entries", ex);
+        }
+    }
+
+    public String readMilestone(String sessionId) {
+        SpecKitSession session = requireSession(sessionId);
+        Path milestone = Path.of(session.getWorkspacePath()).resolve(MILESTONE_PATH).normalize();
+        if (!Files.exists(milestone)) {
+            return "";
+        }
+        try {
+            return Files.readString(milestone);
+        } catch (IOException ex) {
+            throw new SessionPathIsolationException("Failed to read milestone", ex);
+        }
     }
 
     public SpecKitSession runSpecify(String sessionId, String input) {
@@ -236,6 +277,7 @@ public class SessionService {
             String context = buildConversationContext(after, internalAction);
             assistantMessage = aiClient.generateReply(systemPrompt, context, normalizedMessage);
             addTimeline(sessionId, "chat", "success", "orchestrated=" + internalAction);
+            appendMilestoneSnapshot(after, "chat", "AI回复成功，继续推进。", false);
         } catch (RuntimeException ex) {
             String reason = trimLog(ex.getMessage());
             assistantMessage = "已收到你的输入，并完成内部推进。\n"
@@ -243,6 +285,7 @@ public class SessionService {
                 + "AI 回复生成暂时失败，请重试一次。\n"
                 + "失败原因: " + reason;
             addTimeline(sessionId, "chat_ai_failed", "failed", reason);
+            appendMilestoneSnapshot(after, "chat_ai_failed", "AI回复失败: " + reason, false);
         }
         return new ChatResult(after.getSessionId(), after.getStatus(), assistantMessage);
     }
@@ -508,9 +551,74 @@ public class SessionService {
                 + "目标: " + session.getObjective() + "\n"
                 + "内部动作: " + internalAction + "\n"
                 + "当前状态: " + session.getStatus() + "\n"
+                + "里程碑摘要:\n" + summarize(readMilestoneTail(session)) + "\n"
                 + "spec.md 摘要:\n" + summarize(artifacts.getSpecMd()) + "\n"
                 + "plan.md 摘要:\n" + summarize(artifacts.getPlanMd()) + "\n"
                 + "tasks.md 摘要:\n" + summarize(artifacts.getTasksMd());
+    }
+
+    private String readMilestoneTail(SpecKitSession session) {
+        String text = readMilestone(session.getSessionId());
+        if (text.isBlank()) {
+            return "(空)";
+        }
+        if (text.length() <= 1200) {
+            return text;
+        }
+        return text.substring(text.length() - 1200);
+    }
+
+    private void appendMilestoneSnapshot(SpecKitSession session, String trigger, String note, boolean resetFile) {
+        Path milestone = Path.of(session.getWorkspacePath()).resolve(MILESTONE_PATH).normalize();
+        try {
+            Files.createDirectories(milestone.getParent());
+            String rank = stageCheckbox(session.getStatus());
+            String snapshot = "\n## " + Instant.now() + " | " + trigger + "\n"
+                    + "- sessionId: " + session.getSessionId() + "\n"
+                    + "- project: " + session.getProjectName() + "\n"
+                    + "- objective: " + session.getObjective() + "\n"
+                    + "- status: " + session.getStatus() + "\n"
+                    + "- featureBranch: " + (session.getFeatureBranch() == null ? "" : session.getFeatureBranch()) + "\n"
+                    + "- note: " + note + "\n"
+                    + "- progress: " + rank + "\n";
+            if (resetFile || !Files.exists(milestone)) {
+                Files.writeString(milestone,
+                        "# Session Milestones\n\n用于关联 sessionId 的里程碑记录，给 AI 作为历史上下文。\n" + snapshot,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING);
+            } else {
+                Files.writeString(milestone, snapshot, StandardOpenOption.APPEND);
+            }
+        } catch (IOException ex) {
+            throw new SessionPathIsolationException("Failed to write milestone snapshot", ex);
+        }
+    }
+
+    private String stageCheckbox(SessionStatus status) {
+        boolean specified = status == SessionStatus.SPECIFIED || status == SessionStatus.PLANNED || status == SessionStatus.TASKS_GENERATED;
+        boolean planned = status == SessionStatus.PLANNED || status == SessionStatus.TASKS_GENERATED;
+        boolean tasks = status == SessionStatus.TASKS_GENERATED;
+        return "[" + (specified ? "x" : " ") + "] SPECIFIED "
+                + "[" + (planned ? "x" : " ") + "] PLANNED "
+                + "[" + (tasks ? "x" : " ") + "] TASKS_GENERATED";
+    }
+
+    private SessionSummary toSummary(SpecKitSession session) {
+        return new SessionSummary(
+                session.getSessionId(),
+                session.getProjectName(),
+                session.getObjective(),
+                session.getStatus(),
+                session.getWorkspacePath(),
+                session.getCreatedAt()
+        );
+    }
+
+    private WorkspaceEntry toWorkspaceEntry(Path workspace, Path path) {
+        Path relative = workspace.relativize(path);
+        int depth = relative.getNameCount();
+        String normalized = relative.toString().replace('\\', '/');
+        return new WorkspaceEntry(normalized, Files.isDirectory(path), depth);
     }
 
     private String summarize(String text) {
@@ -606,6 +714,77 @@ public class SessionService {
 
         public String getAssistantMessage() {
             return assistantMessage;
+        }
+    }
+
+    public static class SessionSummary {
+        private final String sessionId;
+        private final String projectName;
+        private final String objective;
+        private final SessionStatus status;
+        private final String workspacePath;
+        private final Instant createdAt;
+
+        public SessionSummary(String sessionId,
+                              String projectName,
+                              String objective,
+                              SessionStatus status,
+                              String workspacePath,
+                              Instant createdAt) {
+            this.sessionId = sessionId;
+            this.projectName = projectName;
+            this.objective = objective;
+            this.status = status;
+            this.workspacePath = workspacePath;
+            this.createdAt = createdAt;
+        }
+
+        public String getSessionId() {
+            return sessionId;
+        }
+
+        public String getProjectName() {
+            return projectName;
+        }
+
+        public String getObjective() {
+            return objective;
+        }
+
+        public SessionStatus getStatus() {
+            return status;
+        }
+
+        public String getWorkspacePath() {
+            return workspacePath;
+        }
+
+        public Instant getCreatedAt() {
+            return createdAt;
+        }
+    }
+
+    public static class WorkspaceEntry {
+        private final String path;
+        private final boolean directory;
+        private final int depth;
+
+        public WorkspaceEntry(String path, boolean directory, int depth) {
+            this.path = path;
+            this.directory = directory;
+            this.depth = depth;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public boolean isDirectory() {
+            return directory;
+        }
+
+        public int getDepth() {
+            return depth;
         }
     }
 }
