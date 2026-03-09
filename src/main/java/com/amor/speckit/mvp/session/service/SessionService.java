@@ -7,11 +7,16 @@ import com.amor.speckit.mvp.session.domain.SpecKitSession;
 import com.amor.speckit.mvp.session.domain.TimelineEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -20,11 +25,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,13 +40,26 @@ public class SessionService {
     private static final String SCRIPT_ROOT = ".specify/scripts/powershell";
     private static final String TEMPLATE_ROOT = ".specify/templates";
     private static final String MILESTONE_PATH = ".spec-kit/milestone.md";
-    private static final long ACTION_TIMEOUT_SECONDS = 120;
+    private static final long DEFAULT_ACTION_TIMEOUT_SECONDS = 120;
 
     private final SessionWorkspaceManager sessionWorkspaceManager;
     private final ObjectMapper objectMapper;
     private final AiClient aiClient;
     private final Map<String, SpecKitSession> sessions = new ConcurrentHashMap<>();
     private final Map<String, List<TimelineEvent>> timelines = new ConcurrentHashMap<>();
+    private final Map<String, PendingAction> pendingActions = new ConcurrentHashMap<>();
+
+    @Value("${app.spec-kit.execution.timeout-seconds:120}")
+    private long actionTimeoutSeconds;
+
+    @Value("${app.spec-kit.execution.openhands-enabled:false}")
+    private boolean openHandsEnabled;
+
+    @Value("${app.spec-kit.execution.openhands-base-url:}")
+    private String openHandsBaseUrl;
+
+    @Value("${app.spec-kit.execution.openhands-api-key:}")
+    private String openHandsApiKey;
 
     public SessionService(SessionWorkspaceManager sessionWorkspaceManager,
                           ObjectMapper objectMapper,
@@ -139,19 +159,20 @@ public class SessionService {
             throw new IllegalStateException("action requires approval: " + normalizedAction);
         }
 
-        ProcessExecutionResult result = runCommand(workspace, actionSpec.command, ACTION_TIMEOUT_SECONDS);
+        ProcessExecutionResult result = executeAction(sessionId, workspace, normalizedAction, actionSpec);
         String timelineAction = "execute_" + normalizedAction;
-        String summary = "exit=" + result.exitCode;
+        String summary = "source=" + result.source + ", exit=" + result.exitCode;
         addTimeline(sessionId, timelineAction, result.exitCode == 0 ? "success" : "failed", summary);
         appendMilestoneSnapshot(session, timelineAction,
-                "执行动作: " + normalizedAction + ", exit=" + result.exitCode, false);
+            "执行动作: " + normalizedAction + ", source=" + result.source + ", exit=" + result.exitCode, false);
 
         return new ExecutionResult(
                 sessionId,
                 normalizedAction,
                 result.exitCode,
                 trimLog(result.stdout),
-                trimLog(result.stderr)
+                trimLog(result.stderr),
+                result.source
         );
     }
 
@@ -292,7 +313,13 @@ public class SessionService {
             throw new IllegalArgumentException("message must not be blank");
         }
 
-        SpecKitSession before = requireSession(sessionId);
+        SpecKitSession currentSession = requireSession(sessionId);
+        PendingAction pendingAction = pendingActions.get(sessionId);
+        if (pendingAction != null) {
+            return handlePendingActionReply(currentSession, pendingAction, normalizedMessage);
+        }
+
+        SpecKitSession before = currentSession;
         SpecKitSession after;
         String internalAction;
 
@@ -305,6 +332,20 @@ public class SessionService {
         } else {
             internalAction = "tasks";
             after = runTasks(sessionId, normalizedMessage);
+        }
+
+        ActionSpec actionSpec = detectActionIntent(normalizedMessage);
+        if (actionSpec != null) {
+            pendingActions.put(sessionId, new PendingAction(actionSpec.getAction(), actionSpec.isRequiresApproval()));
+            addTimeline(sessionId, "chat_action_pending", "success", "action=" + actionSpec.getAction());
+            appendMilestoneSnapshot(after, "chat_action_pending",
+                "等待用户确认执行动作: " + actionSpec.getAction(), false);
+            String riskHint = actionSpec.isRequiresApproval() ? "该动作属于高风险操作。\n" : "";
+            String confirmationPrompt = "我识别到你希望执行工具动作: " + actionSpec.getAction() + "。\n"
+                + riskHint
+                + "这将由系统内置执行器触发（优先走 OpenHands）。\n"
+                + "请回复“确认执行”继续，或回复“取消执行”放弃。";
+            return new ChatResult(after.getSessionId(), after.getStatus(), confirmationPrompt);
         }
 
         String assistantMessage;
@@ -326,6 +367,53 @@ public class SessionService {
             appendMilestoneSnapshot(after, "chat_ai_failed", "AI回复失败: " + reason, false);
         }
         return new ChatResult(after.getSessionId(), after.getStatus(), assistantMessage);
+    }
+
+    private ChatResult handlePendingActionReply(SpecKitSession session,
+                                                PendingAction pendingAction,
+                                                String userMessage) {
+        String normalizedLower = userMessage.toLowerCase(Locale.ROOT);
+        if (isAffirmative(normalizedLower)) {
+            pendingActions.remove(session.getSessionId());
+            ExecutionResult execution = runControlledAction(session.getSessionId(), pendingAction.getAction(), true);
+            String executionSummary = "已执行动作 " + execution.getAction()
+                    + " (source=" + execution.getSource() + ", exit=" + execution.getExitCode() + ")";
+
+            String assistantMessage;
+            try {
+                String systemPrompt = "你是企业内部的 AI 编程助手。"
+                        + "用户刚确认执行了一个工程动作，你需要说明结果并给出下一步建议。"
+                        + "回复必须简洁、中文、可执行。";
+                String context = buildConversationContext(session, "chat_confirmed_action")
+                        + "\n执行摘要: " + executionSummary
+                        + "\nstdout: " + summarize(execution.getStdout())
+                        + "\nstderr: " + summarize(execution.getStderr());
+                String aiReply = aiClient.generateReply(systemPrompt, context, userMessage);
+                assistantMessage = executionSummary + "\n" + aiReply;
+                addTimeline(session.getSessionId(), "chat_action_confirmed", "success", executionSummary);
+                appendMilestoneSnapshot(session, "chat_action_confirmed", executionSummary, false);
+            } catch (RuntimeException ex) {
+                String reason = trimLog(ex.getMessage());
+                assistantMessage = executionSummary + "\nAI 总结失败，请重试。原因: " + reason;
+                addTimeline(session.getSessionId(), "chat_action_confirmed_ai_failed", "failed", reason);
+                appendMilestoneSnapshot(session, "chat_action_confirmed_ai_failed", reason, false);
+            }
+            return new ChatResult(session.getSessionId(), session.getStatus(), assistantMessage);
+        }
+
+        if (isNegative(normalizedLower)) {
+            pendingActions.remove(session.getSessionId());
+            String message = "已取消动作执行: " + pendingAction.getAction() + "。"
+                    + "你可以继续描述需求，我会继续推进文档和实现计划。";
+            addTimeline(session.getSessionId(), "chat_action_cancelled", "success", pendingAction.getAction());
+            appendMilestoneSnapshot(session, "chat_action_cancelled", message, false);
+            return new ChatResult(session.getSessionId(), session.getStatus(), message);
+        }
+
+        String remind = "当前有待确认动作: " + pendingAction.getAction()
+            + (pendingAction.isRequiresApproval() ? "（高风险）" : "")
+            + "。请回复“确认执行”或“取消执行”。";
+        return new ChatResult(session.getSessionId(), session.getStatus(), remind);
     }
 
     public SessionArtifacts getArtifacts(String sessionId) {
@@ -416,7 +504,7 @@ public class SessionService {
                         "Script failed: " + scriptName + " exit=" + exitCode + " stderr=" + trimLog(stderr)
                 );
             }
-            return new ProcessExecutionResult(exitCode, stdout, stderr);
+            return new ProcessExecutionResult(exitCode, stdout, stderr, "local");
         } catch (IOException ex) {
             throw new SessionPathIsolationException("Failed to start PowerShell command", ex);
         } catch (InterruptedException ex) {
@@ -434,13 +522,13 @@ public class SessionService {
             Process process = processBuilder.start();
             String stdout = readStream(process.getInputStream());
             String stderr = readStream(process.getErrorStream());
-            boolean finished = process.waitFor(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS);
+            boolean finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
                 throw new SessionPathIsolationException("Action timed out after " + timeoutSeconds + "s");
             }
             int exitCode = process.exitValue();
-            return new ProcessExecutionResult(exitCode, stdout, stderr);
+            return new ProcessExecutionResult(exitCode, stdout, stderr, "local");
         } catch (IOException ex) {
             throw new SessionPathIsolationException("Failed to execute action", ex);
         } catch (InterruptedException ex) {
@@ -449,13 +537,112 @@ public class SessionService {
         }
     }
 
+    private ProcessExecutionResult executeAction(String sessionId,
+                                                 Path workspace,
+                                                 String action,
+                                                 ActionSpec actionSpec) {
+        long timeout = actionTimeoutSeconds > 0 ? actionTimeoutSeconds : DEFAULT_ACTION_TIMEOUT_SECONDS;
+        if (openHandsEnabled && openHandsBaseUrl != null && !openHandsBaseUrl.isBlank()) {
+            try {
+                return runWithOpenHands(workspace, action, actionSpec, timeout);
+            } catch (RuntimeException ex) {
+                addTimeline(sessionId, "execute_openhands_fallback", "failed", trimLog(ex.getMessage()));
+            }
+        }
+        return runCommand(workspace, actionSpec.command, timeout);
+    }
+
+    private ProcessExecutionResult runWithOpenHands(Path workspace,
+                                                    String action,
+                                                    ActionSpec actionSpec,
+                                                    long timeoutSeconds) {
+        String endpoint = openHandsBaseUrl.endsWith("/")
+                ? openHandsBaseUrl + "api/actions/execute"
+                : openHandsBaseUrl + "/api/actions/execute";
+
+        JsonNode body = objectMapper.createObjectNode()
+                .put("action", action)
+                .put("workspacePath", workspace.toAbsolutePath().toString())
+                .put("timeoutSeconds", timeoutSeconds)
+                .set("command", objectMapper.valueToTree(actionSpec.command));
+        try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .timeout(java.time.Duration.ofSeconds(timeoutSeconds))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)));
+            if (openHandsApiKey != null && !openHandsApiKey.isBlank()) {
+                builder.header("Authorization", "Bearer " + openHandsApiKey);
+            }
+
+            HttpResponse<String> response = HttpClient.newHttpClient().send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new SessionPathIsolationException("OpenHands execute failed: status=" + response.statusCode()
+                        + " body=" + trimLog(response.body()));
+            }
+
+            JsonNode result = objectMapper.readTree(response.body());
+            int exitCode = result.path("exitCode").asInt(-1);
+            String stdout = result.path("stdout").asText("");
+            String stderr = result.path("stderr").asText("");
+            return new ProcessExecutionResult(exitCode, stdout, stderr, "openhands");
+        } catch (IOException | InterruptedException ex) {
+            if (ex instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new SessionPathIsolationException("OpenHands execute request failed", ex);
+        }
+    }
+
     private Map<String, ActionSpec> buildActionWhitelist() {
         Map<String, ActionSpec> actions = new HashMap<>();
-        actions.put("git_status", new ActionSpec(List.of("git", "status", "--short", "--branch"), false));
-        actions.put("git_version", new ActionSpec(List.of("git", "--version"), false));
-        actions.put("maven_version", new ActionSpec(List.of("mvn", "-v"), false));
-        actions.put("git_push_origin", new ActionSpec(List.of("git", "push", "origin", "HEAD"), true));
+        actions.put("git_status", new ActionSpec("git_status", List.of("git", "status", "--short", "--branch"), false));
+        actions.put("git_version", new ActionSpec("git_version", List.of("git", "--version"), false));
+        actions.put("maven_version", new ActionSpec("maven_version", List.of("mvn", "-v"), false));
+        actions.put("maven_test", new ActionSpec("maven_test", List.of("mvn", "test", "-q"), false));
+        actions.put("maven_package_skip_tests", new ActionSpec("maven_package_skip_tests", List.of("mvn", "-q", "-DskipTests", "package"), false));
+        actions.put("git_push_origin", new ActionSpec("git_push_origin", List.of("git", "push", "origin", "HEAD"), true));
         return actions;
+    }
+
+    private ActionSpec detectActionIntent(String userMessage) {
+        String normalized = userMessage.toLowerCase(Locale.ROOT);
+        if (containsAny(normalized, "git push", "推送代码", "推到远端", "push 到", "push到")) {
+            return buildActionWhitelist().get("git_push_origin");
+        }
+        if (containsAny(normalized, "git status", "git状态", "查看状态", "仓库状态")) {
+            return buildActionWhitelist().get("git_status");
+        }
+        if (containsAny(normalized, "git version", "git --version", "git 版本")) {
+            return buildActionWhitelist().get("git_version");
+        }
+        if (containsAny(normalized, "maven test", "mvn test", "跑测试", "执行测试")) {
+            return buildActionWhitelist().get("maven_test");
+        }
+        if (containsAny(normalized, "maven package", "mvn package", "打包")) {
+            return buildActionWhitelist().get("maven_package_skip_tests");
+        }
+        if (containsAny(normalized, "maven version", "mvn -v", "maven 版本")) {
+            return buildActionWhitelist().get("maven_version");
+        }
+        return null;
+    }
+
+    private boolean containsAny(String text, String... patterns) {
+        for (String pattern : patterns) {
+            if (text.contains(pattern)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isAffirmative(String text) {
+        return containsAny(text, "确认", "同意", "是", "yes", "ok", "执行", "继续", "可以");
+    }
+
+    private boolean isNegative(String text) {
+        return containsAny(text, "取消", "不用", "不要", "否", "no", "停止");
     }
 
     private String readStream(java.io.InputStream inputStream) throws IOException {
@@ -756,21 +943,51 @@ public class SessionService {
         private final int exitCode;
         private final String stdout;
         private final String stderr;
+        private final String source;
 
-        private ProcessExecutionResult(int exitCode, String stdout, String stderr) {
+        private ProcessExecutionResult(int exitCode, String stdout, String stderr, String source) {
             this.exitCode = exitCode;
             this.stdout = stdout;
             this.stderr = stderr;
+            this.source = source;
         }
     }
 
     private static class ActionSpec {
+        private final String action;
         private final List<String> command;
         private final boolean requiresApproval;
 
-        private ActionSpec(List<String> command, boolean requiresApproval) {
+        private ActionSpec(String action, List<String> command, boolean requiresApproval) {
+            this.action = action;
             this.command = command;
             this.requiresApproval = requiresApproval;
+        }
+
+        private String getAction() {
+            return action;
+        }
+
+        private boolean isRequiresApproval() {
+            return requiresApproval;
+        }
+    }
+
+    private static class PendingAction {
+        private final String action;
+        private final boolean requiresApproval;
+
+        private PendingAction(String action, boolean requiresApproval) {
+            this.action = action;
+            this.requiresApproval = requiresApproval;
+        }
+
+        private String getAction() {
+            return action;
+        }
+
+        private boolean isRequiresApproval() {
+            return requiresApproval;
         }
     }
 
@@ -804,13 +1021,20 @@ public class SessionService {
         private final int exitCode;
         private final String stdout;
         private final String stderr;
+        private final String source;
 
-        public ExecutionResult(String sessionId, String action, int exitCode, String stdout, String stderr) {
+        public ExecutionResult(String sessionId,
+                               String action,
+                               int exitCode,
+                               String stdout,
+                               String stderr,
+                               String source) {
             this.sessionId = sessionId;
             this.action = action;
             this.exitCode = exitCode;
             this.stdout = stdout;
             this.stderr = stderr;
+            this.source = source;
         }
 
         public String getSessionId() {
@@ -831,6 +1055,10 @@ public class SessionService {
 
         public String getStderr() {
             return stderr;
+        }
+
+        public String getSource() {
+            return source;
         }
     }
 

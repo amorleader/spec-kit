@@ -18,6 +18,11 @@ app:
   spec-kit:
     session:
       workspace-root: "/srv/spec-kit/workspaces"
+    execution:
+      timeout-seconds: ${APP_SPEC_KIT_EXEC_TIMEOUT_SECONDS:${SPEC_KIT_EXEC_TIMEOUT_SECONDS:120}}
+      openhands-enabled: ${APP_SPEC_KIT_OPENHANDS_ENABLED:${SPEC_KIT_OPENHANDS_ENABLED:false}}
+      openhands-base-url: ${APP_SPEC_KIT_OPENHANDS_BASE_URL:${SPEC_KIT_OPENHANDS_BASE_URL:}}
+      openhands-api-key: ${APP_SPEC_KIT_OPENHANDS_API_KEY:${SPEC_KIT_OPENHANDS_API_KEY:}}
   build-planner:
     max-results-min: 1
     max-results-max: 20

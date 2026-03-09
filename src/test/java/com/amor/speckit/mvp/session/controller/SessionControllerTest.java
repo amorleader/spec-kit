@@ -178,34 +178,29 @@ class SessionControllerTest {
                 .andExpect(jsonPath("$.assistantMessage").value(org.hamcrest.Matchers.containsString("AI 回复生成暂时失败")));
     }
 
-        @Test
-        void shouldExecuteControlledAction() throws Exception {
-                MvcResult createResult = mockMvc.perform(post("/api/sessions")
-                                                .contentType(MediaType.APPLICATION_JSON)
-                                                .content("{\"projectName\":\"exec-poc\",\"objective\":\"verify controlled action\"}"))
-                                .andExpect(status().isOk())
-                                .andReturn();
+    @Test
+    void shouldConfirmActionWithinChatFlow() throws Exception {
+        when(aiClient.generateReply(anyString(), anyString(), anyString()))
+                .thenReturn("mock assistant reply");
 
-                String sessionId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("sessionId").asText();
+        MvcResult createResult = mockMvc.perform(post("/api/sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectName\":\"exec-poc\",\"objective\":\"verify chat execute\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
 
-                mockMvc.perform(post("/api/sessions/{id}/execute", sessionId)
-                                                .contentType(MediaType.APPLICATION_JSON)
-                                                .content("{\"action\":\"git_version\"}"))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.sessionId").value(sessionId))
-                                .andExpect(jsonPath("$.action").value("git_version"))
-                                .andExpect(jsonPath("$.stdout", not(emptyOrNullString())));
+        String sessionId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("sessionId").asText();
 
-                        mockMvc.perform(post("/api/sessions/{id}/execute", sessionId)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content("{\"action\":\"git_push_origin\",\"approved\":false}"))
-                                .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("requires approval")));
+        mockMvc.perform(post("/api/sessions/{id}/chat", sessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"请执行 git status\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assistantMessage", org.hamcrest.Matchers.containsString("请回复“确认执行”继续")));
 
-                        mockMvc.perform(post("/api/sessions/{id}/execute", sessionId)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content("{\"action\":\"git_push_origin\",\"approved\":true}"))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.action").value("git_push_origin"));
-        }
+        mockMvc.perform(post("/api/sessions/{id}/chat", sessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"确认执行\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assistantMessage", org.hamcrest.Matchers.containsString("已执行动作 git_status")));
+    }
 }

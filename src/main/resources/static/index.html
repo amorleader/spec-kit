@@ -174,39 +174,6 @@
             resize: vertical;
         }
 
-        .exec-box {
-            margin-top: 10px;
-            border: 1px solid #3f6177;
-            border-radius: 8px;
-            background: #0a1720;
-            padding: 8px;
-        }
-
-        .exec-box .row {
-            display: grid;
-            gap: 8px;
-            grid-template-columns: 1fr;
-            align-items: center;
-        }
-
-        .exec-box select {
-            width: 100%;
-            border-radius: 8px;
-            border: 1px solid #476c80;
-            background: #0b1821;
-            color: var(--text);
-            padding: 10px;
-            font: inherit;
-        }
-
-        .exec-box label {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            font-size: 0.8rem;
-            color: var(--muted);
-        }
-
         .composer button {
             margin-top: 8px;
         }
@@ -306,21 +273,6 @@
                 <button id="sendBtn" type="button">发送</button>
             </div>
 
-            <div class="exec-box">
-                <div class="row">
-                    <select id="actionSelect">
-                        <option value="git_version">执行: git_version</option>
-                        <option value="git_status">执行: git_status</option>
-                        <option value="maven_version">执行: maven_version</option>
-                        <option value="git_push_origin">执行: git_push_origin (高风险)</option>
-                    </select>
-                    <label>
-                        <input type="checkbox" id="approveDanger"/>
-                        我确认执行高风险动作（例如 push）
-                    </label>
-                    <button id="runActionBtn" type="button">执行动作</button>
-                </div>
-            </div>
         </section>
     </div>
 </div>
@@ -459,26 +411,6 @@
         await refreshMilestone();
     }
 
-    async function runAction() {
-        if (!state.sessionId) {
-            appendChat("system", "请先创建或恢复会话", "warn");
-            return;
-        }
-        const action = document.getElementById("actionSelect").value;
-        const approved = document.getElementById("approveDanger").checked;
-        appendChat("system", `执行动作: ${action}`);
-        const data = await callApi(`/api/sessions/${encodeURIComponent(state.sessionId)}/execute`, "POST", {action, approved});
-        appendChat("system", `exitCode=${data.exitCode}`);
-        if (data.stdout) {
-            appendChat("system", `stdout: ${data.stdout}`);
-        }
-        if (data.stderr) {
-            appendChat("system", `stderr: ${data.stderr}`, "warn");
-        }
-        await refreshWorkspace();
-        await refreshMilestone();
-    }
-
     async function loadStartupChoice() {
         const modal = document.getElementById("startupModal");
         const hint = document.getElementById("resumeHint");
@@ -533,14 +465,6 @@
             await sendChat();
         } catch (err) {
             appendChat("assistant", `处理失败: ${err.message}`, "error");
-        }
-    });
-
-    document.getElementById("runActionBtn").addEventListener("click", async () => {
-        try {
-            await runAction();
-        } catch (err) {
-            appendChat("system", `动作执行失败: ${err.message}`, "error");
         }
     });
 
