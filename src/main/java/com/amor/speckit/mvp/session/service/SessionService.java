@@ -119,7 +119,7 @@ public class SessionService {
         }
     }
 
-    public ExecutionResult runControlledAction(String sessionId, String action) {
+    public ExecutionResult runControlledAction(String sessionId, String action, boolean approved) {
         String normalizedAction = normalize(action).toLowerCase();
         if (normalizedAction.isEmpty()) {
             throw new IllegalArgumentException("action must not be blank");
@@ -129,13 +129,17 @@ public class SessionService {
         Path workspace = Path.of(session.getWorkspacePath());
         ensureWorkspaceScaffold(workspace);
 
-        Map<String, List<String>> whitelist = buildActionWhitelist(workspace);
-        List<String> command = whitelist.get(normalizedAction);
-        if (command == null) {
+        Map<String, ActionSpec> whitelist = buildActionWhitelist();
+        ActionSpec actionSpec = whitelist.get(normalizedAction);
+        if (actionSpec == null) {
             throw new IllegalArgumentException("unsupported action: " + normalizedAction);
         }
 
-        ProcessExecutionResult result = runCommand(workspace, command, ACTION_TIMEOUT_SECONDS);
+        if (actionSpec.requiresApproval && !approved) {
+            throw new IllegalStateException("action requires approval: " + normalizedAction);
+        }
+
+        ProcessExecutionResult result = runCommand(workspace, actionSpec.command, ACTION_TIMEOUT_SECONDS);
         String timelineAction = "execute_" + normalizedAction;
         String summary = "exit=" + result.exitCode;
         addTimeline(sessionId, timelineAction, result.exitCode == 0 ? "success" : "failed", summary);
@@ -445,11 +449,12 @@ public class SessionService {
         }
     }
 
-    private Map<String, List<String>> buildActionWhitelist(Path workspace) {
-        Map<String, List<String>> actions = new HashMap<>();
-        actions.put("git_status", List.of("git", "status", "--short", "--branch"));
-        actions.put("git_version", List.of("git", "--version"));
-        actions.put("maven_version", List.of("mvn", "-v"));
+    private Map<String, ActionSpec> buildActionWhitelist() {
+        Map<String, ActionSpec> actions = new HashMap<>();
+        actions.put("git_status", new ActionSpec(List.of("git", "status", "--short", "--branch"), false));
+        actions.put("git_version", new ActionSpec(List.of("git", "--version"), false));
+        actions.put("maven_version", new ActionSpec(List.of("mvn", "-v"), false));
+        actions.put("git_push_origin", new ActionSpec(List.of("git", "push", "origin", "HEAD"), true));
         return actions;
     }
 
@@ -756,6 +761,16 @@ public class SessionService {
             this.exitCode = exitCode;
             this.stdout = stdout;
             this.stderr = stderr;
+        }
+    }
+
+    private static class ActionSpec {
+        private final List<String> command;
+        private final boolean requiresApproval;
+
+        private ActionSpec(List<String> command, boolean requiresApproval) {
+            this.command = command;
+            this.requiresApproval = requiresApproval;
         }
     }
 

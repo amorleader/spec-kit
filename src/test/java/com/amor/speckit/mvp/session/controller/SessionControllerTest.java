@@ -195,5 +195,17 @@ class SessionControllerTest {
                                 .andExpect(jsonPath("$.sessionId").value(sessionId))
                                 .andExpect(jsonPath("$.action").value("git_version"))
                                 .andExpect(jsonPath("$.stdout", not(emptyOrNullString())));
+
+                        mockMvc.perform(post("/api/sessions/{id}/execute", sessionId)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content("{\"action\":\"git_push_origin\",\"approved\":false}"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("requires approval")));
+
+                        mockMvc.perform(post("/api/sessions/{id}/execute", sessionId)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content("{\"action\":\"git_push_origin\",\"approved\":true}"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.action").value("git_push_origin"));
         }
 }

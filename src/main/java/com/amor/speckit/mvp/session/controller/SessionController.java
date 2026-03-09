@@ -94,7 +94,11 @@ public class SessionController {
     @PostMapping("/{id}/execute")
     public ExecuteActionResponse execute(@PathVariable("id") String sessionId,
                                          @Valid @RequestBody ExecuteActionRequest request) {
-        SessionService.ExecutionResult result = sessionService.runControlledAction(sessionId, request.getAction());
+        SessionService.ExecutionResult result = sessionService.runControlledAction(
+            sessionId,
+            request.getAction(),
+            request.isApproved()
+        );
         return new ExecuteActionResponse(
                 result.getSessionId(),
                 result.getAction(),
