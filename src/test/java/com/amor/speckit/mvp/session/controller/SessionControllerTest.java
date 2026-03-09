@@ -203,4 +203,12 @@ class SessionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.assistantMessage", org.hamcrest.Matchers.containsString("已执行动作 git_status")));
     }
+
+        @Test
+        void shouldNotExposeDirectExecuteEndpoint() throws Exception {
+                mockMvc.perform(post("/api/sessions/some-id/execute")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"action\":\"git_status\"}"))
+                                .andExpect(status().isNotFound());
+        }
 }
