@@ -1,6 +1,8 @@
 package com.amor.speckit.mvp.session.controller;
 
 import com.amor.speckit.mvp.session.domain.SpecKitSession;
+import com.amor.speckit.mvp.session.dto.ChatRequest;
+import com.amor.speckit.mvp.session.dto.ChatResponse;
 import com.amor.speckit.mvp.session.dto.CreateSessionRequest;
 import com.amor.speckit.mvp.session.dto.CreateSessionResponse;
 import com.amor.speckit.mvp.session.dto.SessionArtifactsResponse;
@@ -59,6 +61,13 @@ public class SessionController {
                                      @Valid @RequestBody StageActionRequest request) {
         SpecKitSession session = sessionService.runTasks(sessionId, request.getInput());
         return new StageActionResponse(session.getSessionId(), session.getStatus());
+    }
+
+    @PostMapping("/{id}/chat")
+    public ChatResponse chat(@PathVariable("id") String sessionId,
+                             @Valid @RequestBody ChatRequest request) {
+        SessionService.ChatResult result = sessionService.runChat(sessionId, request.getMessage());
+        return new ChatResponse(result.getSessionId(), result.getStatus(), result.getAssistantMessage());
     }
 
     @GetMapping("/{id}/artifacts")

@@ -203,6 +203,32 @@ public class SessionService {
         }
     }
 
+    public ChatResult runChat(String sessionId, String userMessage) {
+        String normalizedMessage = normalize(userMessage);
+        if (normalizedMessage.isEmpty()) {
+            throw new IllegalArgumentException("message must not be blank");
+        }
+
+        SpecKitSession before = requireSession(sessionId);
+        SpecKitSession after;
+        String internalAction;
+
+        if (before.getStatus() == SessionStatus.CREATED) {
+            internalAction = "specify";
+            after = runSpecify(sessionId, normalizedMessage);
+        } else if (before.getStatus() == SessionStatus.SPECIFIED) {
+            internalAction = "plan";
+            after = runPlan(sessionId, normalizedMessage);
+        } else {
+            internalAction = "tasks";
+            after = runTasks(sessionId, normalizedMessage);
+        }
+
+        String assistantMessage = buildAssistantMessage(after, internalAction);
+        addTimeline(sessionId, "chat", "success", "orchestrated=" + internalAction);
+        return new ChatResult(after.getSessionId(), after.getStatus(), assistantMessage);
+    }
+
     public SessionArtifacts getArtifacts(String sessionId) {
         SpecKitSession session = requireSession(sessionId);
         String spec = readArtifact(session, "spec.md");
@@ -425,6 +451,39 @@ public class SessionService {
         return normalized.substring(0, 280) + "...";
     }
 
+    private String buildAssistantMessage(SpecKitSession session, String internalAction) {
+        String statusText;
+        String nextHint;
+        switch (session.getStatus()) {
+            case SPECIFIED:
+                statusText = "我已经完成需求梳理并更新了规格草案。";
+                nextHint = "继续描述你希望的实现细节，我会自动补充方案设计。";
+                break;
+            case PLANNED:
+                statusText = "我已经把方案设计落到计划文档中。";
+                nextHint = "继续补充约束或偏好，我会自动细化任务清单。";
+                break;
+            case TASKS_GENERATED:
+                statusText = "我已经更新了可执行任务清单。";
+                nextHint = "你可以继续对话提出修改，我会持续调整文档与任务。";
+                break;
+            default:
+                statusText = "我已收到你的输入并完成内部处理。";
+                nextHint = "请继续告诉我你的需求变化。";
+                break;
+        }
+
+        return "收到，你的需求已同步。"
+                + "\n"
+                + statusText
+                + "\n"
+                + "当前内部动作: " + internalAction
+                + "\n"
+                + "当前状态: " + session.getStatus()
+                + "\n"
+                + nextHint;
+    }
+
     private String toShortName(String projectName) {
         String normalized = projectName.toLowerCase().replaceAll("[^a-z0-9]+", "-");
         normalized = normalized.replaceAll("^-+", "").replaceAll("-+$", "");
@@ -483,6 +542,30 @@ public class SessionService {
             this.exitCode = exitCode;
             this.stdout = stdout;
             this.stderr = stderr;
+        }
+    }
+
+    public static class ChatResult {
+        private final String sessionId;
+        private final SessionStatus status;
+        private final String assistantMessage;
+
+        public ChatResult(String sessionId, SessionStatus status, String assistantMessage) {
+            this.sessionId = sessionId;
+            this.status = status;
+            this.assistantMessage = assistantMessage;
+        }
+
+        public String getSessionId() {
+            return sessionId;
+        }
+
+        public SessionStatus getStatus() {
+            return status;
+        }
+
+        public String getAssistantMessage() {
+            return assistantMessage;
         }
     }
 }

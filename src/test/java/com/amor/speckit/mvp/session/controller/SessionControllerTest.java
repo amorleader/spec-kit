@@ -83,4 +83,43 @@ class SessionControllerTest {
                 .andExpect(jsonPath("$.tasksMd", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.timeline.length()").value(greaterThanOrEqualTo(4)));
     }
+
+    @Test
+    void shouldAutoOrchestrateStagesViaChatApi() throws Exception {
+        String createBody = "{\"projectName\":\"chat-poc\",\"objective\":\"chat first workflow\"}";
+
+        MvcResult createResult = mockMvc.perform(post("/api/sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode createJson = objectMapper.readTree(createResult.getResponse().getContentAsString());
+        String sessionId = createJson.get("sessionId").asText();
+
+        mockMvc.perform(post("/api/sessions/{id}/chat", sessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"我要做一个报销审批平台\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SPECIFIED"))
+                .andExpect(jsonPath("$.assistantMessage", not(emptyOrNullString())));
+
+        mockMvc.perform(post("/api/sessions/{id}/chat", sessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"优先考虑内网部署和可观测性\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PLANNED"));
+
+        mockMvc.perform(post("/api/sessions/{id}/chat", sessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"请继续细化交付任务和验收标准\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("TASKS_GENERATED"));
+
+        mockMvc.perform(get("/api/sessions/{id}/artifacts", sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.specMd", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.planMd", not(emptyOrNullString())))
+                .andExpect(jsonPath("$.tasksMd", not(emptyOrNullString())));
+    }
 }

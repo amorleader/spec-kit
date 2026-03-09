@@ -139,7 +139,7 @@
         .composer-footer {
             margin-top: 8px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 8px;
         }
 
@@ -259,7 +259,7 @@
 <div class="app">
     <section class="hero">
         <h1>spec-kit Workflow Console</h1>
-        <p>对话式推进: specify -> plan -> tasks，并实时查看文档与执行时间线。</p>
+        <p>输入你的想法，系统会在后台自动推进分析、方案和任务，并持续更新文档。</p>
     </section>
 
     <div class="layout">
@@ -281,25 +281,20 @@
             <div class="composer" style="margin-top: 10px;">
                 <textarea id="chatInput" placeholder="输入本轮增量需求，例如：补充验收标准并补充风险清单"></textarea>
                 <div class="composer-footer">
-                    <select id="stageSelect">
-                        <option value="specify">执行 Specify</option>
-                        <option value="plan">执行 Plan</option>
-                        <option value="tasks">执行 Tasks</option>
-                    </select>
-                    <button id="sendBtn" type="button">发送并执行</button>
+                    <button id="sendBtn" type="button">发送</button>
                 </div>
             </div>
 
-            <div class="console" id="consoleLog"></div>
+            <div class="console" id="chatStream"></div>
         </section>
 
         <section class="right-grid">
             <div class="panel">
-                <h2>阶段进度</h2>
+                <h2>项目推进看板</h2>
                 <div class="progress">
-                    <div class="stage" id="stage-spec">SPECIFY</div>
-                    <div class="stage" id="stage-plan">PLAN</div>
-                    <div class="stage" id="stage-tasks">TASKS</div>
+                    <div class="stage" id="stage-spec">需求理解</div>
+                    <div class="stage" id="stage-plan">方案设计</div>
+                    <div class="stage" id="stage-tasks">任务落地</div>
                 </div>
                 <h2 style="margin-top: 12px;">Timeline</h2>
                 <div class="timeline" id="timeline"></div>
@@ -344,14 +339,15 @@
         tasks: document.getElementById("stage-tasks")
     };
 
-    function pushLog(message, level) {
-        const box = document.getElementById("consoleLog");
+    function appendChat(role, message, level) {
+        const box = document.getElementById("chatStream");
         const line = document.createElement("div");
-        line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        line.textContent = `${role}: ${message}`;
         if (level) {
             line.classList.add(level);
         }
-        box.prepend(line);
+        box.appendChild(line);
+        box.scrollTop = box.scrollHeight;
     }
 
     function updateStatusBar(maskedPath) {
@@ -437,35 +433,36 @@
             updateProgress();
             renderArtifacts();
             renderTimeline();
-            pushLog(`会话创建成功: ${state.sessionId}`);
+            document.getElementById("chatStream").innerHTML = "";
+            appendChat("system", `会话创建成功: ${state.sessionId}`);
         } catch (err) {
-            pushLog(`会话创建失败: ${err.message}`, "error");
+            appendChat("system", `会话创建失败: ${err.message}`, "error");
         }
     });
 
     document.getElementById("sendBtn").addEventListener("click", async () => {
         if (!state.sessionId) {
-            pushLog("请先创建会话", "warn");
+            appendChat("system", "请先创建会话", "warn");
             return;
         }
 
         const input = document.getElementById("chatInput").value.trim();
         if (!input) {
-            pushLog("请输入本轮需求", "warn");
+            appendChat("system", "请输入本轮需求", "warn");
             return;
         }
 
-        const stage = document.getElementById("stageSelect").value;
+        appendChat("user", input);
         try {
-            const data = await callApi(`/api/sessions/${encodeURIComponent(state.sessionId)}/${stage}`, "POST", { input });
+            const data = await callApi(`/api/sessions/${encodeURIComponent(state.sessionId)}/chat`, "POST", { message: input });
             state.status = data.status;
             updateStatusBar();
             updateProgress();
             await refreshArtifacts();
-            pushLog(`执行 ${stage} 成功`);
+            appendChat("assistant", data.assistantMessage);
             document.getElementById("chatInput").value = "";
         } catch (err) {
-            pushLog(`执行 ${stage} 失败: ${err.message}`, "error");
+            appendChat("assistant", `处理失败: ${err.message}`, "error");
         }
     });
 
@@ -482,7 +479,7 @@
     updateProgress();
     renderArtifacts();
     renderTimeline();
-    pushLog("页面已就绪，等待创建会话");
+    appendChat("system", "页面已就绪，等待创建会话");
 </script>
 </body>
 </html>
